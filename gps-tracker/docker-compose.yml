@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: ble_tracker_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ble_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ble_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ble_tracker}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ble_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ble_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ble_tracker_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ble_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: ble_tracker_mailhog
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    networks:
+      - ble_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ble_tracker_backend
+    env_file:
+      - ./backend/.env
+    environment:
+      - MZONE_CLIENT_SECRET=g_SkQ.B.z3TeBU$$g#hVeP#c2
+    ports:
+      - "0.0.0.0:8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ble_network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  admin:
+    build:
+      context: ./admin-dashboard
+      dockerfile: Dockerfile
+    container_name: ble_tracker_admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./admin-dashboard:/app
+      - /app/node_modules
+    environment:
+      - BACKEND_URL=http://backend:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - ble_network
+    command: npm start
+
+  customer:
+    build:
+      context: ./customer-dashboard
+      dockerfile: Dockerfile
+    container_name: ble_tracker_customer
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./customer-dashboard:/app
+      - /app/node_modules
+    environment:
+      - BACKEND_URL=http://backend:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - ble_network
+    command: npm start
+
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: ble_tracker_nginx
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - backend
+  #     - admin
+  #     - customer
+  #   networks:
+  #     - ble_network
+
+volumes:
+  postgres_data:
+
+networks:
+  ble_network:
+    driver: bridge

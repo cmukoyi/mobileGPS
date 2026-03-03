@@ -1,0 +1,98 @@
+name: Deploy to Digital Ocean
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+      
+      - name: Add Digital Ocean to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DO_SERVER_IP }} >> ~/.ssh/known_hosts
+      
+      - name: Deploy to Digital Ocean
+        env:
+          DO_SERVER_IP: ${{ secrets.DO_SERVER_IP }}
+          DO_USER: ${{ secrets.DO_USER }}
+          MZONE_CLIENT_ID: ${{ secrets.MZONE_CLIENT_ID }}
+          MZONE_CLIENT_SECRET: ${{ secrets.MZONE_CLIENT_SECRET }}
+          MPROFILER_USERNAME: ${{ secrets.MPROFILER_USERNAME }}
+          MPROFILER_PASSWORD: ${{ secrets.MPROFILER_PASSWORD }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          # Copy files to server
+          ssh $DO_USER@$DO_SERVER_IP "mkdir -p ~/gps-tracker"
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '__pycache__' \
+            --exclude '.env' \
+            --exclude 'build' \
+            --exclude '.dart_tool' \
+            ./ $DO_USER@$DO_SERVER_IP:~/gps-tracker/
+          
+          # Deploy on server
+          ssh $DO_USER@$DO_SERVER_IP << 'EOF'
+            cd ~/gps-tracker/gps-tracker
+            
+            # Create .env file from secrets
+            cat > backend/.env << ENVEOF
+            DEBUG=False
+            SECRET_KEY=$SECRET_KEY
+            DATABASE_URL=$DATABASE_URL
+            SMTP_SERVER=smtp.gmail.com
+            SMTP_PORT=587
+            SMTP_USERNAME=$SMTP_USERNAME
+            SMTP_PASSWORD=$SMTP_PASSWORD
+            SMTP_FROM_EMAIL=$SMTP_USERNAME
+            SMTP_USE_TLS=True
+            MZONE_BASE_URL=https://api.mzoneweb.net
+            MZONE_CLIENT_ID=$MZONE_CLIENT_ID
+            MZONE_CLIENT_SECRET=$MZONE_CLIENT_SECRET
+            MZONE_TOKEN_URL=https://login.mzoneweb.net/connect/token
+            MZONE_API_TIMEOUT=30
+            MPROFILER_BASE_URL=https://live.scopemp.net/Scope.MProfiler.Api
+            MPROFILER_USERNAME=$MPROFILER_USERNAME
+            MPROFILER_PASSWORD=$MPROFILER_PASSWORD
+            ALLOWED_ORIGINS=*
+            BACKEND_HOST=0.0.0.0
+            BACKEND_PORT=5001
+ENVEOF
+            
+            # Pull and restart containers
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d --build
+            
+            # Wait for containers to be healthy
+            sleep 10
+            
+            # Show container status
+            docker-compose ps
+            
+            # Show recent logs
+            docker-compose logs --tail=50
+          EOF
+      
+      - name: Verify deployment
+        run: |
+          sleep 5
+          curl -f http://${{ secrets.DO_SERVER_IP }}:5001/health || exit 1
+          echo "✅ Deployment successful!"
