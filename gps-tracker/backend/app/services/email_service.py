@@ -144,15 +144,6 @@ class EmailService:
                     html_content=html
                 )
             else:
-# Send via SendGrid or SMTP
-            if self.use_sendgrid:
-                return self._send_via_sendgrid(
-                    to_email=to_email,
-                    subject='Welcome to BLE Tracker',
-                    text_content="Welcome to BLE Tracker!",
-                    html_content=html
-                )
-            else:
                 part = MIMEText(html, 'html')
                 msg.attach(part)
                 
