@@ -48,28 +48,28 @@ jobs:
             --exclude '.dart_tool' \
             ./ $DO_USER@$DO_SERVER_IP:~/gps-tracker/
           
-          # Create .env file locally using printf
+          # Create .env file locally
           mkdir -p backend
-          printf "DEBUG=False\n" > backend/.env
-          printf "SECRET_KEY=${SECRET_KEY}\n" >> backend/.env
-          printf "DATABASE_URL=${DATABASE_URL}\n" >> backend/.env
-          printf "SENDGRID_API_KEY=${SENDGRID_API_KEY}\n" >> backend/.env
-          printf "FROM_EMAIL=${FROM_EMAIL}\n" >> backend/.env
-          printf "SMTP_HOST=mailhog\n" >> backend/.env
-          printf "SMTP_PORT=1025\n" >> backend/.env
-          printf "SMTP_USER=\n" >> backend/.env
-          printf "SMTP_PASSWORD=\n" >> backend/.env
-          printf "MZONE_BASE_URL=https://api.mzoneweb.net\n" >> backend/.env
-          printf "MZONE_CLIENT_ID=${MZONE_CLIENT_ID}\n" >> backend/.env
-          printf "MZONE_CLIENT_SECRET=${MZONE_CLIENT_SECRET}\n" >> backend/.env
-          printf "MZONE_TOKEN_URL=https://login.mzoneweb.net/connect/token\n" >> backend/.env
-          printf "MZONE_API_TIMEOUT=30\n" >> backend/.env
-          printf "MPROFILER_BASE_URL=https://live.scopemp.net/Scope.MProfiler.Api\n" >> backend/.env
-          printf "MPROFILER_USERNAME=${MPROFILER_USERNAME}\n" >> backend/.env
-          printf "MPROFILER_PASSWORD=${MPROFILER_PASSWORD}\n" >> backend/.env
-          printf "ALLOWED_ORIGINS=*\n" >> backend/.env
-          printf "BACKEND_HOST=0.0.0.0\n" >> backend/.env
-          printf "BACKEND_PORT=8000\n" >> backend/.env
+          echo "DEBUG=False" > backend/.env
+          echo "SECRET_KEY=${SECRET_KEY}" >> backend/.env
+          echo "DATABASE_URL=${DATABASE_URL}" >> backend/.env
+          echo "SENDGRID_API_KEY=${SENDGRID_API_KEY}" >> backend/.env
+          echo "FROM_EMAIL=${FROM_EMAIL}" >> backend/.env
+          echo "SMTP_HOST=mailhog" >> backend/.env
+          echo "SMTP_PORT=1025" >> backend/.env
+          echo "SMTP_USER=" >> backend/.env
+          echo "SMTP_PASSWORD=" >> backend/.env
+          echo "MZONE_BASE_URL=https://api.mzoneweb.net" >> backend/.env
+          echo "MZONE_CLIENT_ID=${MZONE_CLIENT_ID}" >> backend/.env
+          echo "MZONE_CLIENT_SECRET=${MZONE_CLIENT_SECRET}" >> backend/.env
+          echo "MZONE_TOKEN_URL=https://login.mzoneweb.net/connect/token" >> backend/.env
+          echo "MZONE_API_TIMEOUT=30" >> backend/.env
+          echo "MPROFILER_BASE_URL=https://live.scopemp.net/Scope.MProfiler.Api" >> backend/.env
+          echo "MPROFILER_USERNAME=${MPROFILER_USERNAME}" >> backend/.env
+          echo "MPROFILER_PASSWORD=${MPROFILER_PASSWORD}" >> backend/.env
+          echo "ALLOWED_ORIGINS=*" >> backend/.env
+          echo "BACKEND_HOST=0.0.0.0" >> backend/.env
+          echo "BACKEND_PORT=8000" >> backend/.env
           
           # Copy .env file to server
           scp backend/.env $DO_USER@$DO_SERVER_IP:~/gps-tracker/gps-tracker/backend/.env
