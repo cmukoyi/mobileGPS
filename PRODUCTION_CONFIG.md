@@ -116,7 +116,7 @@ SSH to server and edit nginx config:
 
 ```bash
 ssh root@161.35.38.209
-cd ~/gps-tracker/gps-tracker/nginx
+cd /root/gps-tracker/gps-tracker/nginx
 nano nginx.conf
 ```
 
@@ -256,7 +256,7 @@ After updating, rebuild and redistribute the app.
 ### Check Service Status
 ```bash
 ssh root@161.35.38.209
-cd ~/gps-tracker/gps-tracker
+cd /root/gps-tracker/gps-tracker
 docker-compose ps
 ```
 
@@ -300,28 +300,28 @@ cd /Users/carl/Documents/MobileCode/mobileGPS/deploy
 ### Backup Database
 ```bash
 ssh root@161.35.38.209
-cd ~/gps-tracker/gps-tracker
+cd /root/gps-tracker/gps-tracker
 docker-compose exec postgres pg_dump -U ble_user ble_tracker > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Download backup to local machine
-scp root@161.35.38.209:~/gps-tracker/gps-tracker/backup_*.sql ./backups/
+scp root@161.35.38.209:/root/gps-tracker/gps-tracker/backup_*.sql ./backups/
 ```
 
 ### Restore Database
 ```bash
 # Upload backup to server
-scp backup_file.sql root@161.35.38.209:~/gps-tracker/gps-tracker/
+scp backup_file.sql root@161.35.38.209:/root/gps-tracker/gps-tracker/
 
 # Restore on server
 ssh root@161.35.38.209
-cd ~/gps-tracker/gps-tracker
+cd /root/gps-tracker/gps-tracker
 cat backup_file.sql | docker-compose exec -T postgres psql -U ble_user ble_tracker
 ```
 
 ### Restart Services
 ```bash
 ssh root@161.35.38.209
-cd ~/gps-tracker/gps-tracker
+cd /root/gps-tracker/gps-tracker
 docker-compose restart
 ```
 
@@ -358,7 +358,7 @@ sudo certbot renew --dry-run
 ### Backend API not working
 ```bash
 ssh root@161.35.38.209
-cd ~/gps-tracker/gps-tracker
+cd /root/gps-tracker/gps-tracker
 docker-compose logs backend
 
 # Check if backend container is running
@@ -371,7 +371,7 @@ docker-compose restart backend
 ### Database connection issues
 ```bash
 ssh root@161.35.38.209
-cd ~/gps-tracker/gps-tracker
+cd /root/gps-tracker/gps-tracker
 
 # Check PostgreSQL container
 docker-compose logs postgres
