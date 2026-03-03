@@ -28,12 +28,9 @@ jobs:
         env:
           DO_SERVER_IP: ${{ secrets.DO_SERVER_IP }}
           DO_USER: ${{ secrets.DO_USER }}
-          MZONE_CLIENT_ID: ${{ secrets.MZONE_CLIENT_ID }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           MZONE_CLIENT_SECRET: ${{ secrets.MZONE_CLIENT_SECRET }}
-          MPROFILER_USERNAME: ${{ secrets.MPROFILER_USERNAME }}
-          MPROFILER_PASSWORD: ${{ secrets.MPROFILER_PASSWORD }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
         run: |
@@ -44,57 +41,76 @@ jobs:
             --exclude 'node_modules' \
             --exclude '__pycache__' \
             --exclude '.env' \
+            --exclude 'backend/.env' \
             --exclude 'build' \
             --exclude '.dart_tool' \
+            --exclude 'postgres_data' \
             ./gps-tracker/ $DO_USER@$DO_SERVER_IP:~/gps-tracker/
           
-          # Create production .env file
-          cat > .env << ENVEOF
-          # Production Environment Variables
-          NODE_ENV=production
-          DEBUG=False
-          
+          # Create root .env file for docker-compose
+          cat > .env << 'ENVEOF'
           # Database Configuration
           POSTGRES_USER=ble_user
-          POSTGRES_PASSWORD=hBY1d3jKNwN3iC7zAeNZKaIZjCBPUTkWDhlk2UK5Wq0=
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
           POSTGRES_DB=ble_tracker
-          DATABASE_URL=postgresql://ble_user:hBY1d3jKNwN3iC7zAeNZKaIZjCBPUTkWDhlk2UK5Wq0=@db:5432/ble_tracker
           
-          # SendGrid Configuration
-          SENDGRID_API_KEY=${SENDGRID_API_KEY}
-          FROM_EMAIL=${FROM_EMAIL}
+          # MZone Configuration (for docker-compose environment section)
+          MZONE_CLIENT_SECRET=${MZONE_CLIENT_SECRET}
+          ENVEOF
+          
+          # Substitute environment variables
+          sed -i "s|\${POSTGRES_PASSWORD}|${POSTGRES_PASSWORD}|g" .env
+          sed -i "s|\${MZONE_CLIENT_SECRET}|${MZONE_CLIENT_SECRET}|g" .env
+          
+          # Create backend/.env file
+          cat > backend.env << 'BACKENDEOF'
+          # Database Configuration
+          DATABASE_URL=postgresql://ble_user:${POSTGRES_PASSWORD}@db:5432/ble_tracker
           
           # Redis Configuration
           REDIS_URL=redis://redis:6379/0
           
-          # Secret Key for JWT
+          # JWT Secret Key
           SECRET_KEY=${SECRET_KEY}
           
+          # SendGrid Email Configuration
+          SENDGRID_API_KEY=${SENDGRID_API_KEY}
+          FROM_EMAIL=${FROM_EMAIL}
+          
           # MZone API Configuration
-          MZONE_CLIENT_ID=${MZONE_CLIENT_ID}
+          MZONE_API_URL=https://api.myprofiler.com/oauth2/v1
+          MZONE_REDIRECT_URI=http://${DO_SERVER_IP}/api/v1/mzone/callback
+          MZONE_CLIENT_ID=Tracking_GPS
           MZONE_CLIENT_SECRET=${MZONE_CLIENT_SECRET}
-          MZONE_API_URL=https://api.mzonetrack.com
           
-          # MProfiler Configuration
-          MPROFILER_USERNAME=${MPROFILER_USERNAME}
-          MPROFILER_PASSWORD=${MPROFILER_PASSWORD}
-          ENVEOF
+          # Optional Settings
+          DEBUG=False
+          BACKENDEOF
           
-          # Copy .env file to server
+          # Substitute environment variables in backend.env
+          sed -i "s|\${POSTGRES_PASSWORD}|${POSTGRES_PASSWORD}|g" backend.env
+          sed -i "s|\${SECRET_KEY}|${SECRET_KEY}|g" backend.env
+          sed -i "s|\${SENDGRID_API_KEY}|${SENDGRID_API_KEY}|g" backend.env
+          sed -i "s|\${FROM_EMAIL}|${FROM_EMAIL}|g" backend.env
+          sed -i "s|\${DO_SERVER_IP}|${DO_SERVER_IP}|g" backend.env
+          sed -i "s|\${MZONE_CLIENT_SECRET}|${MZONE_CLIENT_SECRET}|g" backend.env
+          
+          # Copy .env files to server
           scp .env $DO_USER@$DO_SERVER_IP:~/gps-tracker/.env
+          scp backend.env $DO_USER@$DO_SERVER_IP:~/gps-tracker/backend/.env
           
           # Deploy on server
           ssh $DO_USER@$DO_SERVER_IP << 'EOF'
             cd ~/gps-tracker
             
-            # Stop and remove existing containers
-            docker-compose down
+            # Remove orphaned containers (like mailhog)
+            docker-compose down --remove-orphans
             
             # Start containers with build
             docker-compose up -d --build
             
             # Wait for containers to be healthy
-            sleep 15
+            sleep 20
             
             # Show container status
             docker-compose ps
