@@ -37,7 +37,7 @@ jobs:
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
         run: |
-          # Copy files to server
+          # Copy gps-tracker folder contents to server
           ssh $DO_USER@$DO_SERVER_IP "mkdir -p ~/gps-tracker"
           rsync -avz --delete \
             --exclude '.git' \
@@ -46,51 +46,58 @@ jobs:
             --exclude '.env' \
             --exclude 'build' \
             --exclude '.dart_tool' \
-            ./ $DO_USER@$DO_SERVER_IP:~/gps-tracker/
+            ./gps-tracker/ $DO_USER@$DO_SERVER_IP:~/gps-tracker/
           
-          # Create .env file locally
-          mkdir -p backend
-          echo "DEBUG=False" > backend/.env
-          echo "SECRET_KEY=${SECRET_KEY}" >> backend/.env
-          echo "DATABASE_URL=${DATABASE_URL}" >> backend/.env
-          echo "SENDGRID_API_KEY=${SENDGRID_API_KEY}" >> backend/.env
-          echo "FROM_EMAIL=${FROM_EMAIL}" >> backend/.env
-          echo "SMTP_HOST=mailhog" >> backend/.env
-          echo "SMTP_PORT=1025" >> backend/.env
-          echo "SMTP_USER=" >> backend/.env
-          echo "SMTP_PASSWORD=" >> backend/.env
-          echo "MZONE_BASE_URL=https://api.mzoneweb.net" >> backend/.env
-          echo "MZONE_CLIENT_ID=${MZONE_CLIENT_ID}" >> backend/.env
-          echo "MZONE_CLIENT_SECRET=${MZONE_CLIENT_SECRET}" >> backend/.env
-          echo "MZONE_TOKEN_URL=https://login.mzoneweb.net/connect/token" >> backend/.env
-          echo "MZONE_API_TIMEOUT=30" >> backend/.env
-          echo "MPROFILER_BASE_URL=https://live.scopemp.net/Scope.MProfiler.Api" >> backend/.env
-          echo "MPROFILER_USERNAME=${MPROFILER_USERNAME}" >> backend/.env
-          echo "MPROFILER_PASSWORD=${MPROFILER_PASSWORD}" >> backend/.env
-          echo "ALLOWED_ORIGINS=*" >> backend/.env
-          echo "BACKEND_HOST=0.0.0.0" >> backend/.env
-          echo "BACKEND_PORT=8000" >> backend/.env
+          # Create production .env file
+          cat > .env << ENVEOF
+          # Production Environment Variables
+          NODE_ENV=production
+          DEBUG=False
+          
+          # Database Configuration
+          POSTGRES_USER=ble_user
+          POSTGRES_PASSWORD=hBY1d3jKNwN3iC7zAeNZKaIZjCBPUTkWDhlk2UK5Wq0=
+          POSTGRES_DB=ble_tracker
+          DATABASE_URL=postgresql://ble_user:hBY1d3jKNwN3iC7zAeNZKaIZjCBPUTkWDhlk2UK5Wq0=@db:5432/ble_tracker
+          
+          # SendGrid Configuration
+          SENDGRID_API_KEY=${SENDGRID_API_KEY}
+          FROM_EMAIL=${FROM_EMAIL}
+          
+          # Redis Configuration
+          REDIS_URL=redis://redis:6379/0
+          
+          # Secret Key for JWT
+          SECRET_KEY=${SECRET_KEY}
+          
+          # MZone API Configuration
+          MZONE_CLIENT_ID=${MZONE_CLIENT_ID}
+          MZONE_CLIENT_SECRET=${MZONE_CLIENT_SECRET}
+          MZONE_API_URL=https://api.mzonetrack.com
+          
+          # MProfiler Configuration
+          MPROFILER_USERNAME=${MPROFILER_USERNAME}
+          MPROFILER_PASSWORD=${MPROFILER_PASSWORD}
+          ENVEOF
           
           # Copy .env file to server
-          scp backend/.env $DO_USER@$DO_SERVER_IP:~/gps-tracker/gps-tracker/backend/.env
+          scp .env $DO_USER@$DO_SERVER_IP:~/gps-tracker/.env
           
           # Deploy on server
           ssh $DO_USER@$DO_SERVER_IP << 'EOF'
-            cd ~/gps-tracker/gps-tracker
+            cd ~/gps-tracker
             
-            # Pull and restart containers
-            docker-compose pull
+            # Stop and remove existing containers
             docker-compose down
+            
+            # Start containers with build
             docker-compose up -d --build
             
             # Wait for containers to be healthy
-            sleep 10
+            sleep 15
             
             # Show container status
             docker-compose ps
-            
-            # Show recent logs
-            docker-compose logs --tail=50
           EOF
       
       - name: Verify deployment
