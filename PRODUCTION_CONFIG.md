@@ -41,7 +41,7 @@ Add these secrets:
 | `DO_USER` | `root` (or your SSH user) |
 | `DO_SSH_PRIVATE_KEY` | Your SSH private key (see below) |
 | `SECRET_KEY` | Generate: `openssl rand -hex 32` |
-| `DATABASE_URL` | `postgresql://gpsuser:CHANGE_THIS_PASSWORD@postgres:5432/gpsdb` |
+| `DATABASE_URL` | `postgresql://ble_user:hBY1d3jKNwN3iC7zAeNZKaIZjCBPUTkWDhlk2UK5Wq0=@db:5432/ble_tracker` |
 | `SENDGRID_API_KEY` | Get from SendGrid dashboard |
 | `FROM_EMAIL` | `noreply@pinplot.me` (verify in SendGrid first) |
 | `MZONE_CLIENT_ID` | Your MZone credentials |
@@ -301,7 +301,7 @@ cd /Users/carl/Documents/MobileCode/mobileGPS/deploy
 ```bash
 ssh root@161.35.38.209
 cd ~/gps-tracker/gps-tracker
-docker-compose exec postgres pg_dump -U gpsuser gpsdb > backup_$(date +%Y%m%d_%H%M%S).sql
+docker-compose exec postgres pg_dump -U ble_user ble_tracker > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Download backup to local machine
 scp root@161.35.38.209:~/gps-tracker/gps-tracker/backup_*.sql ./backups/
@@ -315,7 +315,7 @@ scp backup_file.sql root@161.35.38.209:~/gps-tracker/gps-tracker/
 # Restore on server
 ssh root@161.35.38.209
 cd ~/gps-tracker/gps-tracker
-cat backup_file.sql | docker-compose exec -T postgres psql -U gpsuser gpsdb
+cat backup_file.sql | docker-compose exec -T postgres psql -U ble_user ble_tracker
 ```
 
 ### Restart Services
@@ -377,7 +377,7 @@ cd ~/gps-tracker/gps-tracker
 docker-compose logs postgres
 
 # Check connection
-docker-compose exec postgres psql -U gpsuser gpsdb -c "SELECT 1;"
+docker-compose exec postgres psql -U ble_user ble_tracker -c "SELECT 1;"
 ```
 
 ## 📞 Support & Resources
