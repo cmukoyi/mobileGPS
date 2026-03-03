@@ -22,7 +22,12 @@ This deployment setup includes:
    - Repository for your code
    - GitHub Actions enabled
 
-3. **Domain Name (Optional but recommended)**
+3. **SendGrid Account (Recommended for Email Notifications)**
+   - Free tier: 100 emails/day
+   - Setup guide: [SENDGRID_SETUP.md](SENDGRID_SETUP.md)
+   - Alternative: Use SMTP (Gmail, etc.)
+
+4. **Domain Name (Optional but recommended)**
    - For production use with SSL
 
 ## 🚀 Quick Start Deployment
@@ -96,8 +101,8 @@ This deployment setup includes:
    | `MZONE_CLIENT_SECRET` | MZone API client secret | Your MZone credentials |
    | `MPROFILER_USERNAME` | MProfiler API username | Your MProfiler username |
    | `MPROFILER_PASSWORD` | MProfiler API password | Your MProfiler password |
-   | `SMTP_USERNAME` | Email SMTP username | `your-email@gmail.com` |
-   | `SMTP_PASSWORD` | Email SMTP password | App password |
+   | `SENDGRID_API_KEY` | SendGrid API key for emails | Get from SendGrid dashboard (see SENDGRID_SETUP.md) |
+   | `FROM_EMAIL` | Verified sender email address | `noreply@yourdomain.com` |
 
 3. **Generate SSH Key for GitHub Actions**
    
@@ -120,12 +125,20 @@ cat > .env << 'EOF'
 DEBUG=False
 SECRET_KEY=your-secret-key-here
 DATABASE_URL=postgresql://gpsuser:yourpassword@postgres:5432/gpsdb
-SMTP_SERVER=smtp.gmail.com
+
+# Email Configuration - SendGrid (Recommended)
+# Get API key from: https://app.sendgrid.com/settings/api_keys
+# See SENDGRID_SETUP.md for detailed setup instructions
+SENDGRID_API_KEY=SG.your-sendgrid-api-key-here
+FROM_EMAIL=noreply@yourdomain.com
+
+# SMTP Fallback (optional - only if not using SendGrid)
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
+SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
-SMTP_FROM_EMAIL=your-email@gmail.com
 SMTP_USE_TLS=True
+
 MZONE_BASE_URL=https://api.mzoneweb.net
 MZONE_CLIENT_ID=your-client-id
 MZONE_CLIENT_SECRET=your-client-secret

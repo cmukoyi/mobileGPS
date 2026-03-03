@@ -6,14 +6,33 @@ from datetime import datetime, timedelta
 from typing import Optional
 import os
 
+# SendGrid support
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail, Email, To, Content
+    SENDGRID_AVAILABLE = True
+except ImportError:
+    SENDGRID_AVAILABLE = False
+
 class EmailService:
     def __init__(self):
+        # SendGrid configuration (preferred for production)
+        self.sendgrid_api_key = os.getenv("SENDGRID_API_KEY", "")
+        self.use_sendgrid = bool(self.sendgrid_api_key) and SENDGRID_AVAILABLE
+        
+        # SMTP configuration (fallback or development)
         self.smtp_host = os.getenv("SMTP_HOST", "mailhog")
         self.smtp_port = int(os.getenv("SMTP_PORT", "1025"))
         self.smtp_user = os.getenv("SMTP_USER", "")
         self.smtp_password = os.getenv("SMTP_PASSWORD", "")
         self.from_email = os.getenv("FROM_EMAIL", "noreply@bletracker.com")
         self.debug = os.getenv("DEBUG", "False").lower() == "true"
+        
+        # Log email service configuration
+        if self.use_sendgrid:
+            print("📧 Email Service: Using SendGrid API")
+        else:
+            print(f"📧 Email Service: Using SMTP ({self.smtp_host}:{self.smtp_port})")
         
     def generate_pin(self) -> str:
         """Generate a 6-digit PIN"""
@@ -65,19 +84,28 @@ class EmailService:
             </html>
             """
             
-            part1 = MIMEText(text, 'plain')
-            part2 = MIMEText(html, 'html')
-            msg.attach(part1)
-            msg.attach(part2)
-            
-            # Send email
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
-                if self.smtp_user and self.smtp_password:
-                    server.starttls()
-                    server.login(self.smtp_user, self.smtp_password)
-                server.sendmail(self.from_email, to_email, msg.as_string())
-            
-            return True
+            # Send via SendGrid or SMTP
+            if self.use_sendgrid:
+                return self._send_via_sendgrid(
+                    to_email=to_email,
+                    subject='Your BLE Tracker Verification Code',
+                    text_content=text,
+                    html_content=html
+                )
+            else:
+                part1 = MIMEText(text, 'plain')
+                part2 = MIMEText(html, 'html')
+                msg.attach(part1)
+                msg.attach(part2)
+                
+                # Send email via SMTP
+                with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                    if self.smtp_user and self.smtp_password:
+                        server.starttls()
+                        server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.from_email, to_email, msg.as_string())
+                
+                return True
         except Exception as e:
             print(f"Error sending email: {e}")
             return False
@@ -107,16 +135,34 @@ class EmailService:
             </html>
             """
             
-            part = MIMEText(html, 'html')
-            msg.attach(part)
-            
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
-                if self.smtp_user and self.smtp_password:
-                    server.starttls()
-                    server.login(self.smtp_user, self.smtp_password)
-                server.sendmail(self.from_email, to_email, msg.as_string())
-            
-            return True
+            # Send via SendGrid or SMTP
+            if self.use_sendgrid:
+                return self._send_via_sendgrid(
+                    to_email=to_email,
+                    subject='Welcome to BLE Tracker',
+                    text_content="Welcome to BLE Tracker!",
+                    html_content=html
+                )
+            else:
+# Send via SendGrid or SMTP
+            if self.use_sendgrid:
+                return self._send_via_sendgrid(
+                    to_email=to_email,
+                    subject='Welcome to BLE Tracker',
+                    text_content="Welcome to BLE Tracker!",
+                    html_content=html
+                )
+            else:
+                part = MIMEText(html, 'html')
+                msg.attach(part)
+                
+                with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                    if self.smtp_user and self.smtp_password:
+                        server.starttls()
+                        server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.from_email, to_email, msg.as_string())
+                
+                return True
         except Exception as e:
             print(f"Error sending welcome email: {e}")
             return False
@@ -231,20 +277,54 @@ class EmailService:
             </html>
             """
             
-            part1 = MIMEText(text, 'plain')
-            part2 = MIMEText(html, 'html')
-            msg.attach(part1)
-            msg.attach(part2)
-            
-            # Send email
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
-                if self.smtp_user and self.smtp_password:
-                    server.starttls()
-                    server.login(self.smtp_user, self.smtp_password)
-                server.sendmail(self.from_email, to_email, msg.as_string())
-            
-            return True
+            # Send via SendGrid or SMTP
+            if self.use_sendgrid:
+                return self._send_via_sendgrid(
+                    to_email=to_email,
+                    subject=f'{event_emoji} Geofence Alert: {tracker_name} {event_action} {poi_name}',
+                    text_content=text,
+                    html_content=html
+                )
+            else:
+                part1 = MIMEText(text, 'plain')
+                part2 = MIMEText(html, 'html')
+                msg.attach(part1)
+                msg.attach(part2)
+                
+                # Send email via SMTP
+                with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                    if self.smtp_user and self.smtp_password:
+                        server.starttls()
+                        server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.from_email, to_email, msg.as_string())
+                
+                return True
         except Exception as e:
             print(f"Error sending geofence alert email: {e}")
+            return False
+    
+    def _send_via_sendgrid(self, to_email: str, subject: str, text_content: str, html_content: str) -> bool:
+        """Send email using SendGrid API"""
+        try:
+            message = Mail(
+                from_email=self.from_email,
+                to_emails=to_email,
+                subject=subject,
+                plain_text_content=text_content,
+                html_content=html_content
+            )
+            
+            sg = SendGridAPIClient(self.sendgrid_api_key)
+            response = sg.send(message)
+            
+            if response.status_code >= 200 and response.status_code < 300:
+                print(f"✅ Email sent via SendGrid to {to_email} (Status: {response.status_code})")
+                return True
+            else:
+                print(f"⚠️  SendGrid returned status {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error sending email via SendGrid: {e}")
             return False
 
