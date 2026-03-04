@@ -90,6 +90,26 @@ jobs:
           # Copy override file
           scp docker-compose.staging.yml $DO_USER@$DO_SERVER_IP:~/gps-tracker-staging/docker-compose.override.yml
           
+          # Copy .env files from production as template for staging
+          ssh $DO_USER@$DO_SERVER_IP << 'ENVEOF'
+            # Create staging .env files from production
+            if [ ! -f ~/gps-tracker-staging/.env ]; then
+              cp ~/gps-tracker/.env ~/gps-tracker-staging/.env 2>/dev/null || echo "POSTGRES_USER=ble_user_staging" > ~/gps-tracker-staging/.env
+            fi
+            
+            if [ ! -f ~/gps-tracker-staging/backend/.env ]; then
+              mkdir -p ~/gps-tracker-staging/backend
+              cp ~/gps-tracker/backend/.env ~/gps-tracker-staging/backend/.env 2>/dev/null || cat > ~/gps-tracker-staging/backend/.env << 'BACKENDEOF'
+          # Use production credentials for staging (same database API, different containers)
+          DATABASE_URL=postgresql://ble_user:password@db:5432/ble_tracker_staging
+          REDIS_URL=redis://redis:6379/0
+          DEBUG=True
+          BACKENDEOF
+            fi
+            
+            echo "✅ Staging .env files ready"
+          ENVEOF
+          
           # Deploy on staging
           ssh $DO_USER@$DO_SERVER_IP << 'SSHEOF'
             cd ~/gps-tracker-staging
