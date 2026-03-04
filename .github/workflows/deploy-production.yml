@@ -1,0 +1,93 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for production deployment'
+        required: true
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.2'
+          channel: 'stable'
+      
+      - name: Build Flutter Web App
+        run: |
+          cd gps-tracker/mobile-app/ble_tracker_app
+          flutter pub get
+          flutter build web --release --no-tree-shake-icons
+          echo "✅ Flutter web build completed"
+          ls -lh build/web/main.dart.js
+      
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+      
+      - name: Add Digital Ocean to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DO_SERVER_IP }} >> ~/.ssh/known_hosts
+      
+      - name: Deploy to Production
+        env:
+          DO_SERVER_IP: ${{ secrets.DO_SERVER_IP }}
+          DO_USER: ${{ secrets.DO_USER }}
+        run: |
+          # Copy gps-tracker folder to production
+          ssh $DO_USER@$DO_SERVER_IP "mkdir -p ~/gps-tracker"
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '__pycache__' \
+            --exclude '.env' \
+            --exclude 'backend/.env' \
+            --exclude '.dart_tool' \
+            --exclude 'postgres_data' \
+            --exclude 'postgres_data_staging' \
+            ./gps-tracker/ $DO_USER@$DO_SERVER_IP:~/gps-tracker/
+          
+          # Deploy on production
+          ssh $DO_USER@$DO_SERVER_IP << 'SSHEOF'
+            cd ~/gps-tracker
+            docker-compose down --remove-orphans
+            docker-compose build
+            docker-compose up -d
+            sleep 20
+            docker-compose ps
+            echo "=== Production Flutter Web ==="
+            docker logs --tail 10 ble_tracker_flutter_web
+          SSHEOF
+      
+      - name: Verify Production
+        run: |
+          sleep 5
+          curl -f http://${{ secrets.DO_SERVER_IP }}/api/health || exit 1
+          echo "✅ Production backend healthy!"
+          curl -f -I http://${{ secrets.DO_SERVER_IP }}:3002/ || exit 1
+          echo "✅ Production web app responding!"
+          curl -f -I https://pinplot.me/ || echo "⚠️ HTTPS check failed"
+          echo ""
+          echo "🎉 PRODUCTION DEPLOYED!"
+          echo "Site: https://pinplot.me/"
+          echo "API: https://pinplot.me/api"
+      
+      - name: Tag Release
+        run: |
+          TAG="prod-$(date +%Y%m%d-%H%M%S)"
+          git tag "$TAG"
+          git push origin "$TAG" || echo "Could not push tag"
