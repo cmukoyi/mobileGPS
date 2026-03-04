@@ -113,13 +113,30 @@ jobs:
           # Deploy on staging
           ssh $DO_USER@$DO_SERVER_IP << 'SSHEOF'
             cd ~/gps-tracker-staging
+            
+            echo "=== Stopping existing containers ==="
             docker-compose down --remove-orphans
+            
+            echo "=== Building containers ==="
             docker-compose build
+            
+            echo "=== Starting containers ==="
             docker-compose up -d
+            
+            echo "=== Waiting for startup ==="
             sleep 20
+            
+            echo "=== Container status ==="
             docker-compose ps
+            
+            echo "=== All Docker containers ==="
+            docker ps -a | grep staging
+            
             echo "=== Staging Flutter Web ==="
-            docker logs --tail 10 ble_tracker_flutter_web_staging
+            docker logs --tail 10 ble_tracker_flutter_web_staging 2>&1 || echo "Container not found"
+            
+            echo "=== Staging Backend ==="
+            docker logs --tail 10 ble_tracker_backend_staging 2>&1 || echo "Container not found"
           SSHEOF
       
       - name: Verify Staging
