@@ -59,7 +59,6 @@ jobs:
           
           # Create staging docker-compose override
           cat > docker-compose.staging.yml << 'EOF'
-          version: '3.8'
           services:
             db:
               container_name: ble_tracker_db_staging
@@ -75,14 +74,8 @@ jobs:
               container_name: ble_tracker_backend_staging
               ports:
                 - "8081:8001"
-            admin-dashboard:
-              container_name: ble_tracker_admin_staging
-              ports:
-                - "3011:3000"
-            customer-dashboard:
-              container_name: ble_tracker_customer_staging
-              ports:
-                - "3012:3000"
+              environment:
+                - DEBUG=True
             flutter-web:
               container_name: ble_tracker_flutter_web_staging
               ports:
