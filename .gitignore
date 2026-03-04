@@ -165,3 +165,13 @@ temp/
 .gradle/
 local.properties
 *.hprof
+
+# Documentation with sensitive information
+GITHUB_SECRETS.md
+PRODUCTION_CONFIG.md
+SENDGRID_SETUP.md
+DEPLOYMENT.md
+
+# Backup files
+*.backup-*
+*.old
