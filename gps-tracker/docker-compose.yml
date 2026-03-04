@@ -38,8 +38,6 @@ services:
     container_name: ble_tracker_backend
     env_file:
       - ./backend/.env
-    environment:
-      - MZONE_CLIENT_SECRET=g_SkQ.B.z3TeBU$$g#hVeP#c2
     ports:
       - "0.0.0.0:8000:8000"
     volumes:
