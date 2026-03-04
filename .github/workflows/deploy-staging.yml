@@ -1,0 +1,122 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.2'
+          channel: 'stable'
+      
+      - name: Build Flutter Web App
+        run: |
+          cd gps-tracker/mobile-app/ble_tracker_app
+          flutter pub get
+          flutter build web --release --no-tree-shake-icons
+          echo "✅ Flutter web build completed"
+          ls -lh build/web/main.dart.js
+      
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+      
+      - name: Add Digital Ocean to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DO_SERVER_IP }} >> ~/.ssh/known_hosts
+      
+      - name: Deploy to Staging Environment
+        env:
+          DO_SERVER_IP: ${{ secrets.DO_SERVER_IP }}
+          DO_USER: ${{ secrets.DO_USER }}
+        run: |
+          # Copy gps-tracker folder to staging
+          ssh $DO_USER@$DO_SERVER_IP "mkdir -p ~/gps-tracker-staging"
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '__pycache__' \
+            --exclude '.env' \
+            --exclude 'backend/.env' \
+            --exclude '.dart_tool' \
+            --exclude 'postgres_data' \
+            --exclude 'postgres_data_staging' \
+            ./gps-tracker/ $DO_USER@$DO_SERVER_IP:~/gps-tracker-staging/
+          
+          # Create staging docker-compose override
+          cat > docker-compose.staging.yml << 'EOF'
+          version: '3.8'
+          services:
+            db:
+              container_name: ble_tracker_db_staging
+              volumes:
+                - ./postgres_data_staging:/var/lib/postgresql/data
+              ports:
+                - "5433:5432"
+            redis:
+              container_name: ble_tracker_redis_staging
+              ports:
+                - "6380:6379"
+            backend:
+              container_name: ble_tracker_backend_staging
+              ports:
+                - "8081:8001"
+            admin-dashboard:
+              container_name: ble_tracker_admin_staging
+              ports:
+                - "3011:3000"
+            customer-dashboard:
+              container_name: ble_tracker_customer_staging
+              ports:
+                - "3012:3000"
+            flutter-web:
+              container_name: ble_tracker_flutter_web_staging
+              ports:
+                - "3003:80"
+            nginx:
+              container_name: ble_tracker_nginx_staging
+              ports:
+                - "8443:443"
+                - "8080:80"
+          EOF
+          
+          # Copy override file
+          scp docker-compose.staging.yml $DO_USER@$DO_SERVER_IP:~/gps-tracker-staging/docker-compose.override.yml
+          
+          # Deploy on staging
+          ssh $DO_USER@$DO_SERVER_IP << 'SSHEOF'
+            cd ~/gps-tracker-staging
+            docker-compose down --remove-orphans
+            docker-compose build
+            docker-compose up -d
+            sleep 20
+            docker-compose ps
+            echo "=== Staging Flutter Web ==="
+            docker logs --tail 10 ble_tracker_flutter_web_staging
+          SSHEOF
+      
+      - name: Verify Staging
+        run: |
+          sleep 5
+          curl -f http://${{ secrets.DO_SERVER_IP }}:8081/api/health || exit 1
+          echo "✅ Staging backend healthy!"
+          curl -f -I http://${{ secrets.DO_SERVER_IP }}:3003/ || exit 1
+          echo "✅ Staging web app responding!"
+          echo ""
+          echo "🎉 STAGING DEPLOYED!"
+          echo "Backend: http://${{ secrets.DO_SERVER_IP }}:8081/api"
+          echo "Web App: http://${{ secrets.DO_SERVER_IP }}:3003/"
