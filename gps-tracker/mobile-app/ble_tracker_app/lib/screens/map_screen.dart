@@ -17,6 +17,9 @@ import 'package:ble_tracker_app/models/poi_model.dart';
 import 'package:ble_tracker_app/screens/home_screen.dart';
 import 'package:ble_tracker_app/screens/alerts_screen.dart';
 
+// App version
+const String APP_VERSION = '1.0.0';
+
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
 
@@ -100,6 +103,45 @@ class _MapScreenState extends State<MapScreen> {
     _appleMapController = null;
     _googleMapController = null;
     super.dispose();
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.logout, color: Colors.red.shade700),
+              SizedBox(width: 12),
+              Text('Logout'),
+            ],
+          ),
+          content: Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    if (confirm == true) {
+      await _authService.logout();
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
+      }
+    }
   }
 
   Future<void> _loadTags() async {
@@ -1446,10 +1488,50 @@ Best regards''',
                             ),
                         ],
                       ),
-                      CircleAvatar(
-                        backgroundColor: Colors.white,
-                        radius: 20,
-                        child: Icon(Icons.person, color: AppTheme.brandPrimary),
+                      PopupMenuButton<String>(
+                        offset: Offset(0, 50),
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white,
+                          radius: 20,
+                          child: Icon(Icons.person, color: AppTheme.brandPrimary),
+                        ),
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          PopupMenuItem<String>(
+                            enabled: false,
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline, size: 18, color: Colors.grey[600]),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Version: $APP_VERSION',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuDivider(),
+                          PopupMenuItem<String>(
+                            value: 'logout',
+                            child: Row(
+                              children: [
+                                Icon(Icons.logout, size: 18, color: Colors.red.shade700),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Logout',
+                                  style: TextStyle(color: Colors.red.shade700),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onSelected: (String value) {
+                          if (value == 'logout') {
+                            _handleLogout();
+                          }
+                        },
                       ),
                     ],
                   ),
