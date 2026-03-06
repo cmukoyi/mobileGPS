@@ -92,9 +92,12 @@ jobs:
           sed -i "s|\${DO_SERVER_IP}|${DO_SERVER_IP}|g" backend.env
           sed -i "s|\${MZONE_CLIENT_SECRET}|${MZONE_CLIENT_SECRET}|g" backend.env
           
-          # Copy .env files to server
-          scp .env $DO_USER@$DO_SERVER_IP:~/gps-tracker/.env
-          scp backend.env $DO_USER@$DO_SERVER_IP:~/gps-tracker/backend/.env
+          # Copy .env files to server ONLY if they don't exist (preserve production secrets)
+          ssh $DO_USER@$DO_SERVER_IP "test -f ~/gps-tracker/.env || echo 'Creating new .env'" && \
+          ssh $DO_USER@$DO_SERVER_IP "test -f ~/gps-tracker/.env" || scp .env $DO_USER@$DO_SERVER_IP:~/gps-tracker/.env
+          
+          ssh $DO_USER@$DO_SERVER_IP "test -f ~/gps-tracker/backend/.env || echo 'Creating new backend/.env'" && \
+          ssh $DO_USER@$DO_SERVER_IP "test -f ~/gps-tracker/backend/.env" || scp backend.env $DO_USER@$DO_SERVER_IP:~/gps-tracker/backend/.env
           
           # Deploy on server
           ssh $DO_USER@$DO_SERVER_IP << 'EOF'
