@@ -44,6 +44,8 @@ env/
 .env.local
 .env.*.local
 *.env
+backend.env.*
+!backend.env.example
 
 # Node.js
 node_modules/
@@ -171,8 +173,10 @@ local.properties
 # Documentation with sensitive information
 GITHUB_SECRETS.md
 PRODUCTION_CONFIG.md
+PRODUCTION_SECRETS_AUDIT.md
 SENDGRID_SETUP.md
 DEPLOYMENT.md
+SECURITY_INCIDENT_REMEDIATION.md
 
 # Backup files
 *.backup-*
