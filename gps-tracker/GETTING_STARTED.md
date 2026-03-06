@@ -153,7 +153,6 @@ Now you have a working foundation! Next you can:
 
 3. **Add database**
    - PostgreSQL for user accounts
-   - Redis for caching
 
 4. **Build web dashboard**
    - Admin UI

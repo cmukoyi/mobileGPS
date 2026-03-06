@@ -67,9 +67,6 @@ jobs:
           # Database Configuration
           DATABASE_URL=postgresql://ble_user:${POSTGRES_PASSWORD}@db:5432/ble_tracker
           
-          # Redis Configuration
-          REDIS_URL=redis://redis:6379/0
-          
           # JWT Secret Key
           SECRET_KEY=${SECRET_KEY}
           
