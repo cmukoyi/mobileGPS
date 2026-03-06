@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ble_tracker_app/services/logger_service.dart';
+import 'package:ble_tracker_app/config/environment.dart';
 
 /// Service for fetching vehicle locations from mzone API via backend
 class LocationService {
@@ -13,8 +14,8 @@ class LocationService {
   
   final _logger = LoggerService();
   
-  // Backend URL pointing to production server
-  static const String backendUrl = 'https://pinplot.me';
+  // Backend URL from environment configuration (production by default)
+  static String get backendUrl => Environment.apiBaseUrl;
   
   /// Get auth token from storage
   Future<String?> _getAuthToken() async {

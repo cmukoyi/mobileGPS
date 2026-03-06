@@ -1460,7 +1460,7 @@ Best regards''',
               children: [
                 _buildNavItem(
                   icon: Icons.map_outlined,
-                  label: 'LOCATION',
+                  label: 'MAP',
                   index: 0,
                 ),
                 _buildNavItem(
@@ -1603,23 +1603,6 @@ Best regards''',
               fmap.MarkerLayer(markers: _flutterMapMarkers),
             ],
           ),
-        // Debug overlay to show POI count
-        if (_showPOIs)
-          Positioned(
-            top: 100,
-            left: 10,
-            child: Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'POIs: ${_pois.length}\nCircles: ${_geofenceCircles.length}',
-                style: TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ),
         // Popup bubble for selected vehicle
         if (_selectedVehicle != null)
           Positioned.fill(
@@ -1744,17 +1727,6 @@ Best regards''',
               mainAxisSize: MainAxisSize.min,
               children: [
                 FloatingActionButton(
-                  heroTag: 'manage_pois',
-                  onPressed: () async {
-                    await Navigator.pushNamed(context, '/poi-management');
-                    _loadPOIs(); // Refresh POIs after returning
-                  },
-                  backgroundColor: AppTheme.brandPrimary,
-                  child: Icon(Icons.settings, color: Colors.white),
-                  tooltip: 'Manage Geofences',
-                ),
-                SizedBox(height: 12),
-                FloatingActionButton(
                   heroTag: 'toggle_pois',
                   onPressed: () {
                     setState(() {
@@ -1762,26 +1734,34 @@ Best regards''',
                       _updateGeofenceCircles();
                     });
                   },
-                  backgroundColor: _showPOIs ? AppTheme.brandPrimary : Colors.grey,
+                  backgroundColor: _showPOIs ? Colors.blue : Colors.grey,
                   child: Icon(
-                    _showPOIs ? Icons.visibility : Icons.visibility_off,
+                    Icons.fence,
                     color: Colors.white,
                   ),
                   tooltip: _showPOIs ? 'Hide Geofences' : 'Show Geofences',
                 ),
                 SizedBox(height: 12),
                 FloatingActionButton(
-                  heroTag: 'add_poi',
-                  onPressed: () => _showCreatePOIDialog(),
+                  heroTag: 'add_tracker',
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomeScreen(skipAutoNavigation: true)),
+                    );
+                    if (result == true) {
+                      _loadTags();
+                    }
+                  },
                   backgroundColor: Colors.green,
-                  child: Icon(Icons.add_location, color: Colors.white),
-                  tooltip: 'Create Geofence',
+                  child: Icon(Icons.add, color: Colors.white),
+                  tooltip: 'Add New Tracker',
                 ),
               ],
             ),
           ),
-        // Map controls (zoom and pan)
-        if (!_isLoading && _useFlutterMap)
+        // Map controls (zoom and pan) - Web only
+        if (!_isLoading && _useFlutterMap && kIsWeb)
           Positioned(
             left: 16,
             bottom: 80,
@@ -2875,6 +2855,31 @@ View on $mapProvider to see the vehicle location.''';
                 title: 'Refresh Locations',
                 subtitle: 'Update all tracker positions',
                 onTap: _loadTags,
+              ),
+              
+              SizedBox(height: 12),
+              
+              _buildModernActionTile(
+                icon: Icons.fence,
+                iconColor: Colors.blue.shade600,
+                iconBg: Colors.blue.shade50,
+                title: 'Manage Geofences',
+                subtitle: 'Create and manage location alerts',
+                onTap: () async {
+                  await Navigator.pushNamed(context, '/poi-management');
+                  _loadPOIs();
+                },
+              ),
+              
+              SizedBox(height: 12),
+              
+              _buildModernActionTile(
+                icon: Icons.add_location,
+                iconColor: Colors.green.shade600,
+                iconBg: Colors.green.shade50,
+                title: 'Create Geofence',
+                subtitle: 'Add a new geofence alert zone',
+                onTap: () => _showCreatePOIDialog(),
               ),
               
               SizedBox(height: 32),

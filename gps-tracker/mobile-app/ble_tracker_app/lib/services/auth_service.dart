@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ble_tracker_app/services/logger_service.dart';
+import 'package:ble_tracker_app/config/environment.dart';
 
 class AuthService {
   final _logger = LoggerService();
@@ -11,8 +12,8 @@ class AuthService {
   factory AuthService() => _instance;
   AuthService._internal();
   
-  // Backend URL pointing to production server
-  static const String baseUrl = 'https://pinplot.me';
+  // Backend URL from environment configuration (production by default)
+  static String get baseUrl => Environment.apiBaseUrl;
   
   String? _token;
   

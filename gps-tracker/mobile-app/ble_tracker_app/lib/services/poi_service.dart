@@ -3,9 +3,10 @@ import 'package:http/http.dart' as http;
 import '../models/poi_model.dart';
 import '../services/auth_service.dart';
 import '../services/logger_service.dart';
+import '../config/environment.dart';
 
 class POIService {
-  static const String baseUrl = 'https://pinplot.me/api/v1';
+  static String get baseUrl => '${Environment.apiBaseUrl}/api/v1';
   
   final AuthService _authService = AuthService();
   final LoggerService _logger = LoggerService();

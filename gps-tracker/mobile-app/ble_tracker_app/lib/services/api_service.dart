@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:ble_tracker_app/config/environment.dart';
 
 class ApiService {
-  // Backend URL pointing to production server
-  static const String baseUrl = 'https://pinplot.me';
+  // Backend URL from environment configuration (production by default)
+  static String get baseUrl => Environment.apiBaseUrl;
   
   Future<List<dynamic>> getTags() async {
     try {
@@ -62,7 +63,7 @@ class ApiService {
   Future<bool> checkHealth() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.10:5001/health'),
+        Uri.parse('$baseUrl/health'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 5));
       
