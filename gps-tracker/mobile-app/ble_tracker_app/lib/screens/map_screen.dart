@@ -981,10 +981,10 @@ Best regards''',
   }
 
   void _resetMapView() {
-    // Reset to London, UK
+    // Reset to London, UK at street level
     _flutterMapController.move(
       latlong.LatLng(51.5074, -0.1278),
-      6.0,
+      15.0, // Street-level zoom
     );
   }
 
@@ -1580,7 +1580,7 @@ Best regards''',
             mapController: _flutterMapController,
             options: fmap.MapOptions(
               initialCenter: latlong.LatLng(51.5074, -0.1278), // London, UK
-              initialZoom: 6.0,
+              initialZoom: 15.0, // Street-level zoom
               minZoom: 3.0,
               maxZoom: 18.0,
               interactionOptions: fmap.InteractionOptions(
