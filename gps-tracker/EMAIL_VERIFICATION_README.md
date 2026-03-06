@@ -124,7 +124,6 @@ Services will be available at:
 - **Customer Portal**: http://localhost:3000
 - **MailHog Web UI**: http://localhost:8025
 - **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
 
 ### 2. Check Services Status
 ```bash
