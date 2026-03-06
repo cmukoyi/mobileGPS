@@ -1743,41 +1743,20 @@ Best regards''',
           Positioned(
             bottom: 88, // Above the refresh button
             right: 16,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FloatingActionButton(
-                  heroTag: 'toggle_pois',
-                  onPressed: () {
-                    setState(() {
-                      _showPOIs = !_showPOIs;
-                      _updateGeofenceCircles();
-                    });
-                  },
-                  backgroundColor: _showPOIs ? Colors.blue : Colors.grey,
-                  child: Icon(
-                    Icons.fence,
-                    color: Colors.white,
-                  ),
-                  tooltip: _showPOIs ? 'Hide Locations' : 'Show Locations',
-                ),
-                SizedBox(height: 12),
-                FloatingActionButton(
-                  heroTag: 'add_tracker',
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomeScreen(skipAutoNavigation: true)),
-                    );
-                    if (result == true) {
-                      _loadTags();
-                    }
-                  },
-                  backgroundColor: Colors.green,
-                  child: Icon(Icons.add, color: Colors.white),
-                  tooltip: 'Add New Tracker',
-                ),
-              ],
+            child: FloatingActionButton(
+              heroTag: 'add_tracker',
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeScreen(skipAutoNavigation: true)),
+                );
+                if (result == true) {
+                  _loadTags();
+                }
+              },
+              backgroundColor: Colors.green,
+              child: Icon(Icons.add, color: Colors.white),
+              tooltip: 'Add New Tracker',
             ),
           ),
         // Map controls (zoom and pan) - Web only - Modern compact design
