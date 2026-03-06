@@ -550,6 +550,7 @@ class _MapScreenState extends State<MapScreen> {
     // Tracker selection
     String? selectedTrackerId;
     List<dynamic> availableTags = [];
+    bool showImei = false; // Toggle to show IMEI instead of description
     
     // Load available tags/trackers
     try {
@@ -580,7 +581,7 @@ class _MapScreenState extends State<MapScreen> {
           }
           
           return AlertDialog(
-          title: Text('Create Geofence'),
+          title: Text('Create Location'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -625,7 +626,7 @@ class _MapScreenState extends State<MapScreen> {
                     SizedBox(width: 8),
                     Expanded(
                       child: ChoiceChip(
-                        label: Text('Delivery Route'),
+                        label: Text('Start/End Location'),
                         selected: poiType == POIType.route,
                         onSelected: (selected) {
                           if (selected) {
@@ -641,7 +642,22 @@ class _MapScreenState extends State<MapScreen> {
                 SizedBox(height: 8),
                 
                 // Tracker selection
-                Text('📡 Monitor Tracker *', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('📡 Selected Tracker *', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                // IMEI display toggle
+                Row(
+                  children: [
+                    Checkbox(
+                      value: showImei,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          showImei = value ?? false;
+                        });
+                      },
+                    ),
+                    Text('Display IMEI', style: TextStyle(fontSize: 13)),
+                  ],
+                ),
                 SizedBox(height: 8),
                 if (availableTags.isEmpty)
                   Container(
@@ -670,10 +686,15 @@ class _MapScreenState extends State<MapScreen> {
                       hint: Text('Select tracker to monitor'),
                       items: availableTags.map((tag) {
                         final tagId = tag['id']?.toString() ?? tag['imei']?.toString();
-                        final tagName = tag['device_name'] ?? tag['imei'] ?? 'Unknown Tracker';
+                        final description = tag['device_name'];
+                        final imei = tag['imei'];
+                        // Show description first if available, otherwise IMEI
+                        final displayName = showImei 
+                          ? (imei ?? description ?? 'Unknown Tracker')
+                          : (description ?? imei ?? 'Unknown Tracker');
                         return DropdownMenuItem<String>(
                           value: tagId,
-                          child: Text(tagName),
+                          child: Text(displayName),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -685,16 +706,16 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 SizedBox(height: 12),
                 Text(
-                  'This geofence will only trigger alerts for the selected tracker',
+                  'This location will only trigger alerts for the selected tracker',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic),
                 ),
                 SizedBox(height: 16),
                 Divider(),
                 SizedBox(height: 8),
                 
-                // Origin/FROM location
+                // Origin/START location
                 Text(
-                  poiType == POIType.route ? '📍 FROM (Origin)' : '📍 Location', 
+                  poiType == POIType.route ? '📍 START (Origin)' : '📍 Location', 
                   style: TextStyle(fontWeight: FontWeight.bold)
                 ),
                 SizedBox(height: 8),
@@ -709,7 +730,7 @@ class _MapScreenState extends State<MapScreen> {
                         controller: originPostcodeController,
                         decoration: InputDecoration(
                           labelText: 'Postcode',
-                          hintText: 'e.g., SM1 3EJ',
+                          hintText: 'Enter full postcode',
                           isDense: true,
                         ),
                       ),
@@ -756,7 +777,7 @@ class _MapScreenState extends State<MapScreen> {
                   SizedBox(height: 16),
                   Divider(),
                   SizedBox(height: 8),
-                  Text('📍 TO (Destination)', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('📍 END (Destination)', style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 8),
                   if (destLat != null && destLng != null) ...[
                     Text('${destAddress ?? "${destLat?.toStringAsFixed(4)}, ${destLng?.toStringAsFixed(4)}"}'),
@@ -769,7 +790,7 @@ class _MapScreenState extends State<MapScreen> {
                           controller: destinationPostcodeController,
                           decoration: InputDecoration(
                             labelText: 'Postcode',
-                            hintText: 'e.g., W1A 1AA',
+                            hintText: 'Enter full postcode',
                             isDense: true,
                           ),
                         ),
@@ -859,7 +880,7 @@ class _MapScreenState extends State<MapScreen> {
                         
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('✅ ${poiType == POIType.route ? "Delivery route" : "Geofence"} created and armed to $trackerName'),
+                            content: Text('✅ ${poiType == POIType.route ? "Start/End location" : "Location"} created and armed to $trackerName'),
                             duration: Duration(seconds: 3),
                           ),
                         );
@@ -1738,7 +1759,7 @@ Best regards''',
                     Icons.fence,
                     color: Colors.white,
                   ),
-                  tooltip: _showPOIs ? 'Hide Geofences' : 'Show Geofences',
+                  tooltip: _showPOIs ? 'Hide Locations' : 'Show Locations',
                 ),
                 SizedBox(height: 12),
                 FloatingActionButton(
@@ -2934,7 +2955,7 @@ View on $mapProvider to see the vehicle location.''';
                 icon: Icons.fence,
                 iconColor: Colors.blue.shade600,
                 iconBg: Colors.blue.shade50,
-                title: 'Manage Geofences',
+                title: 'Manage Locations',
                 subtitle: 'Create and manage location alerts',
                 onTap: () async {
                   await Navigator.pushNamed(context, '/poi-management');
@@ -2948,8 +2969,8 @@ View on $mapProvider to see the vehicle location.''';
                 icon: Icons.add_location,
                 iconColor: Colors.green.shade600,
                 iconBg: Colors.green.shade50,
-                title: 'Create Geofence',
-                subtitle: 'Add a new geofence alert zone',
+                title: 'Create Location',
+                subtitle: 'Add a new location alert zone',
                 onTap: () => _showCreatePOIDialog(),
               ),
               
@@ -3418,7 +3439,7 @@ class _ArmDisarmDialogState extends State<_ArmDisarmDialog> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Create a geofence to enable arming',
+                    'Create a location to enable arming',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.grey.shade500,
