@@ -1569,7 +1569,7 @@ Best regards''',
             },
             initialCameraPosition: apple.CameraPosition(
               target: apple.LatLng(51.5074, -0.1278), // London, UK
-              zoom: 6.0,
+              zoom: 12.0,
             ),
             annotations: _appleAnnotations,
             myLocationEnabled: true,
@@ -1588,7 +1588,7 @@ Best regards''',
             },
             initialCameraPosition: gmaps.CameraPosition(
               target: gmaps.LatLng(51.5074, -0.1278), // London, UK
-              zoom: 6.0,
+              zoom: 12.0,
             ),
             markers: _googleMarkers,
             myLocationEnabled: true,
