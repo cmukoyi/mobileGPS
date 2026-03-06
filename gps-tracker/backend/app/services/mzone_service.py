@@ -188,12 +188,16 @@ class MZoneService:
                 print(f"{'='*70}")
                 for v in all_vehicles:
                     reg = v.get('registration', 'NO_REG')
+                    unit_desc = v.get('unit_Description', 'NO_UNIT_DESC')
                     desc = v.get('description', 'NO_DESC')
                     vid = v.get('id', 'NO_ID')
-                    match_status = '✅ MATCH' if reg in user_imeis else '   '
-                    print(f"{match_status} | registration={reg} | desc={desc} | id={vid}")
+                    # Check BOTH registration AND unit_Description
+                    match_status = '✅ MATCH' if (reg in user_imeis or unit_desc in user_imeis) else '   '
+                    print(f"{match_status} | registration={reg} | unit_Description={unit_desc} | desc={desc} | id={vid}")
             
-            # Filter vehicles by user's IMEIs (match registration field)
+            # Filter vehicles by user's IMEIs
+            # IMPORTANT: MZone can store IMEI in EITHER 'registration' OR 'unit_Description' field
+            # We must check BOTH fields to find all user vehicles
             matched_vehicles = []
             vehicle_ids = []
             
@@ -204,11 +208,16 @@ class MZoneService:
             
             for vehicle in all_vehicles:
                 registration = vehicle.get('registration', '')
-                if registration in user_imeis:
+                unit_description = vehicle.get('unit_Description', '')
+                
+                # Check if IMEI matches either registration OR unit_Description
+                if registration in user_imeis or unit_description in user_imeis:
                     matched_vehicles.append(vehicle)
                     vehicle_ids.append(vehicle.get('id'))
+                    matched_field = 'registration' if registration in user_imeis else 'unit_Description'
+                    matched_value = registration if registration in user_imeis else unit_description
                     if self.debug:
-                        print(f"✅ MATCHED: {vehicle.get('description')} | IMEI: {registration} | ID: {vehicle.get('id')}")
+                        print(f"✅ MATCHED: {vehicle.get('description')} | {matched_field}={matched_value} | ID: {vehicle.get('id')}")
             
             if not matched_vehicles:
                 if self.debug:
