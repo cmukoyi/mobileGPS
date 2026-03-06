@@ -1589,8 +1589,7 @@ Best regards''',
             ),
             children: [
               fmap.TileLayer(
-                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                subdomains: ['a', 'b', 'c'],
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.pinplot.tracker',
                 maxZoom: 19,
                 additionalOptions: {
