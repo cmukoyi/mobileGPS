@@ -71,11 +71,54 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
     }
   }
 
+  Future<void> _showDeleteConfirmation(POI poi) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Location'),
+          content: Text(
+            'This action will disable all active tracker monitoring for this location.',
+            style: TextStyle(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      try {
+        await _poiService.deletePOI(poi.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ Location deleted successfully')),
+        );
+        _loadData();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete location: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Manage Geofences'),
+        title: Text('Manage Locations'),
         backgroundColor: AppTheme.brandPrimary,
         foregroundColor: Colors.white,
       ),
@@ -89,12 +132,12 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
                       Icon(Icons.location_off, size: 64, color: Colors.grey),
                       SizedBox(height: 16),
                       Text(
-                        'No geofences created yet',
+                        'No locations created yet',
                         style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Create a geofence from the map screen',
+                        'Create a location from the map screen',
                         style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                       ),
                     ],
@@ -113,7 +156,7 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Add a tracker to arm geofences',
+                            'Add a tracker to arm locations',
                             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                           ),
                         ],
@@ -171,7 +214,7 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
                         ),
                       SizedBox(height: 4),
                       Text(
-                        poi.isRoute ? '📦 Delivery Route' : '📍 Single Location',
+                        poi.isRoute ? '� Start/End Location' : '📍 Single Location',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -180,6 +223,11 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _showDeleteConfirmation(poi),
+                  tooltip: 'Delete Location',
                 ),
               ],
             ),
@@ -195,14 +243,14 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
                   children: [
                     Row(
                       children: [
-                        Text('FROM: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text('START: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         Expanded(child: Text(poi.address ?? 'Unknown', style: TextStyle(fontSize: 12))),
                       ],
                     ),
                     SizedBox(height: 4),
                     Row(
                       children: [
-                        Text('TO: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text('END: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         Expanded(child: Text(poi.destinationAddress ?? 'Unknown', style: TextStyle(fontSize: 12))),
                       ],
                     ),
@@ -212,7 +260,7 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
             ],
             Divider(height: 24),
             Text(
-              'ARM TO TRACKERS',
+              'TRACKER STATUS',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -248,10 +296,10 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
     return Container(
       margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isArmed ? AppTheme.brandPrimary.withOpacity(0.1) : Colors.grey.withOpacity(0.05),
+        color: isArmed ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.05),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isArmed ? AppTheme.brandPrimary.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+          color: isArmed ? Colors.green.withOpacity(0.4) : Colors.red.withOpacity(0.3),
         ),
       ),
       child: SwitchListTile(
@@ -260,17 +308,19 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isArmed ? FontWeight.w600 : FontWeight.normal,
+            color: isArmed ? Colors.green.shade700 : Colors.red.shade700,
           ),
         ),
         subtitle: Text(
-          isArmed ? 'Armed - Monitoring active' : 'Disarmed - No monitoring',
+          isArmed ? '✓ Armed - Monitoring active' : '✗ Disarmed - No monitoring',
           style: TextStyle(
             fontSize: 12,
-            color: isArmed ? AppTheme.brandPrimary : Colors.grey[600],
+            color: isArmed ? Colors.green.shade600 : Colors.red.shade600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         value: isArmed,
-        activeColor: AppTheme.brandPrimary,
+        activeColor: Colors.green,
         onChanged: (value) => _toggleArmStatus(poi, trackerId, isArmed),
         dense: true,
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
