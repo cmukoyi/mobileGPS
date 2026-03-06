@@ -2019,7 +2019,7 @@ Best regards''',
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'My Assets',
+                                  'Assets',
                                   style: GoogleFonts.poppins(
                                     fontSize: 28,
                                     fontWeight: FontWeight.w700,
@@ -2027,7 +2027,7 @@ Best regards''',
                                   ),
                                 ),
                                 Text(
-                                  '${_vehicles.length} ${_vehicles.length == 1 ? 'vehicle' : 'vehicles'} tracked',
+                                  'Total: ${_vehicles.length}',
                                   style: GoogleFonts.inter(
                                     fontSize: 14,
                                     color: Colors.grey.shade600,
@@ -2196,11 +2196,19 @@ Best regards''',
                     ],
                   ),
                 ),
-                // Edit Button
+                // Arm/Disarm Button
                 IconButton(
-                  icon: Icon(Icons.edit, color: AppTheme.brandPrimary, size: 20),
-                  onPressed: () => _showEditNameDialog(vehicle),
-                  tooltip: 'Edit name',
+                  icon: Icon(
+                    _isTrackerArmedToAnyPOI(vehicle.id) 
+                      ? Icons.security 
+                      : Icons.security,
+                    color: _isTrackerArmedToAnyPOI(vehicle.id) 
+                      ? Colors.green.shade700 
+                      : Colors.red.shade700,
+                    size: 20,
+                  ),
+                  onPressed: () => _showArmDisarmDialog(vehicle),
+                  tooltip: _isTrackerArmedToAnyPOI(vehicle.id) ? 'Armed' : 'Disarmed',
                 ),
                 // Share Location Button (disabled for NEW assets)
                 if (hasLocation)
@@ -2209,6 +2217,12 @@ Best regards''',
                     onPressed: () => _showShareLocationOptions(vehicle),
                     tooltip: 'Share location',
                   ),
+                // Edit Button
+                IconButton(
+                  icon: Icon(Icons.edit, color: AppTheme.brandPrimary, size: 20),
+                  onPressed: () => _showEditNameDialog(vehicle),
+                  tooltip: 'Edit name',
+                ),
                 // Chevron (only for assets with location)
                 if (hasLocation)
                   Icon(
@@ -2605,6 +2619,41 @@ Best regards''',
           },
         ),
       ],
+    );
+  }
+
+  /// Check if a tracker is armed to any POI
+  bool _isTrackerArmedToAnyPOI(String trackerId) {
+    if (_pois.isEmpty) return false;
+    
+    for (var poi in _pois) {
+      if (poi is POI && poi.isArmedTo(trackerId)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Show arm/disarm dialog with location list
+  void _showArmDisarmDialog(Vehicle vehicle) {
+    final displayName = _vehicleCustomNames[vehicle.id] ?? 
+                       vehicle.description ?? 
+                       vehicle.registration ?? 
+                       'Unknown Asset';
+    
+    // Create a stateful dialog to manage checkbox states
+    showDialog(
+      context: context,
+      builder: (context) => _ArmDisarmDialog(
+        vehicle: vehicle,
+        displayName: displayName,
+        pois: _pois.whereType<POI>().toList(),
+        poiService: _poiService,
+        onComplete: () {
+          // Reload POIs to get updated armed status
+          _loadPOIs();
+        },
+      ),
     );
   }
 
@@ -3237,5 +3286,220 @@ View on $mapProvider to see the vehicle location.''';
         );
       }
     }
+  }
+}
+
+/// Stateful dialog for arm/disarm with location checkboxes
+class _ArmDisarmDialog extends StatefulWidget {
+  final Vehicle vehicle;
+  final String displayName;
+  final List<POI> pois;
+  final POIService poiService;
+  final VoidCallback onComplete;
+
+  const _ArmDisarmDialog({
+    required this.vehicle,
+    required this.displayName,
+    required this.pois,
+    required this.poiService,
+    required this.onComplete,
+  });
+
+  @override
+  State<_ArmDisarmDialog> createState() => _ArmDisarmDialogState();
+}
+
+class _ArmDisarmDialogState extends State<_ArmDisarmDialog> {
+  late Map<String, bool> _armedStatus;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize armed status for each POI
+    _armedStatus = {};
+    for (var poi in widget.pois) {
+      _armedStatus[poi.id] = poi.isArmedTo(widget.vehicle.id);
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    setState(() => _isSaving = true);
+    
+    try {
+      // Process each POI and update its armed status
+      for (var poi in widget.pois) {
+        final currentlyArmed = poi.isArmedTo(widget.vehicle.id);
+        final shouldBeArmed = _armedStatus[poi.id] ?? false;
+        
+        // Only make API call if status changed
+        if (currentlyArmed != shouldBeArmed) {
+          if (shouldBeArmed) {
+            await widget.poiService.armPOI(poi.id, widget.vehicle.id);
+          } else {
+            await widget.poiService.disarmPOI(poi.id, widget.vehicle.id);
+          }
+        }
+      }
+      
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Armed status updated'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Call onComplete to reload POIs
+        widget.onComplete();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to update: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isArmedToAny = _armedStatus.values.any((armed) => armed);
+    
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(
+            Icons.security,
+            color: isArmedToAny ? Colors.green.shade700 : Colors.red.shade700,
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Arm/Disarm Locations',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
+                Text(
+                  widget.displayName,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      content: Container(
+        width: 400,
+        child: widget.pois.isEmpty
+          ? Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_off, size: 48, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No locations created yet',
+                    style: GoogleFonts.inter(color: Colors.grey.shade600),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Create a geofence to enable arming',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select locations to monitor for this asset:',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  ...widget.pois.map((poi) {
+                    final isArmed = _armedStatus[poi.id] ?? false;
+                    return CheckboxListTile(
+                      value: isArmed,
+                      onChanged: _isSaving ? null : (value) {
+                        setState(() {
+                          _armedStatus[poi.id] = value ?? false;
+                        });
+                      },
+                      title: Text(
+                        poi.name,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: poi.description != null
+                        ? Text(
+                            poi.description!,
+                            style: GoogleFonts.inter(fontSize: 11),
+                          )
+                        : null,
+                      secondary: Icon(
+                        poi.poiType == POIType.route
+                          ? Icons.route
+                          : Icons.location_on,
+                        color: isArmed ? Colors.green.shade700 : Colors.grey,
+                      ),
+                      activeColor: Colors.green.shade700,
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          child: Text('Cancel'),
+        ),
+        if (widget.pois.isNotEmpty)
+          ElevatedButton(
+            onPressed: _isSaving ? null : _saveChanges,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.brandPrimary,
+              foregroundColor: Colors.white,
+            ),
+            child: _isSaving
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text('Save'),
+          ),
+      ],
+    );
   }
 }
