@@ -25,6 +25,14 @@ if [ -z "$STAGED_DART_FILES" ]; then
   exit 0
 fi
 
+# Exclude environment.dart since it's designed to contain both localhost and production URLs
+STAGED_DART_FILES=$(echo "$STAGED_DART_FILES" | grep -v "config/environment.dart")
+
+if [ -z "$STAGED_DART_FILES" ]; then
+  echo "✅ Only environment.dart changed - allowed"
+  exit 0
+fi
+
 FAILED=0
 
 for PATTERN in "${FORBIDDEN_PATTERNS[@]}"; do
