@@ -1763,12 +1763,12 @@ Best regards''',
         // Map controls (zoom and pan) - Web only
         if (!_isLoading && _useFlutterMap && kIsWeb)
           Positioned(
-            left: 16,
-            bottom: 80,
+            right: 16,
+            top: 80,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
@@ -1807,29 +1807,29 @@ Best regards''',
                         icon: Icons.keyboard_arrow_left,
                         onPressed: () => _panMap(0, -0.1),
                         tooltip: 'Pan Left',
-                        width: 40,
+                        width: 32,
                       ),
                       Container(
                         width: 1,
-                        height: 40,
+                        height: 32,
                         color: Colors.grey[300],
                       ),
                       _buildMapControlButton(
                         icon: Icons.my_location,
                         onPressed: _resetMapView,
                         tooltip: 'Reset View',
-                        width: 40,
+                        width: 32,
                       ),
                       Container(
                         width: 1,
-                        height: 40,
+                        height: 32,
                         color: Colors.grey[300],
                       ),
                       _buildMapControlButton(
                         icon: Icons.keyboard_arrow_right,
                         onPressed: () => _panMap(0, 0.1),
                         tooltip: 'Pan Right',
-                        width: 40,
+                        width: 32,
                       ),
                     ],
                   ),
@@ -1870,10 +1870,10 @@ Best regards''',
       child: InkWell(
         onTap: onPressed,
         child: Container(
-          width: width ?? 120,
-          height: 40,
+          width: width ?? 80,
+          height: 32,
           alignment: Alignment.center,
-          child: Icon(icon, size: 20, color: Colors.grey[700]),
+          child: Icon(icon, size: 16, color: Colors.grey[700]),
         ),
       ),
     );
