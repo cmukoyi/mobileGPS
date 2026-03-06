@@ -1760,86 +1760,96 @@ Best regards''',
               ],
             ),
           ),
-        // Map controls (zoom and pan) - Web only
+        // Map controls (zoom and pan) - Web only - Modern compact design
         if (!_isLoading && _useFlutterMap && kIsWeb)
           Positioned(
             right: 16,
             top: 80,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Zoom controls
-                  _buildMapControlButton(
-                    icon: Icons.add,
-                    onPressed: _zoomIn,
-                    tooltip: 'Zoom In',
-                  ),
-                  Divider(height: 1, thickness: 1),
-                  _buildMapControlButton(
-                    icon: Icons.remove,
-                    onPressed: _zoomOut,
-                    tooltip: 'Zoom Out',
-                  ),
-                  Divider(height: 1, thickness: 1),
-                  // Pan up
-                  _buildMapControlButton(
-                    icon: Icons.keyboard_arrow_up,
-                    onPressed: () => _panMap(0.1, 0),
-                    tooltip: 'Pan Up',
-                  ),
-                  // Pan left, center, right
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildMapControlButton(
-                        icon: Icons.keyboard_arrow_left,
-                        onPressed: () => _panMap(0, -0.1),
-                        tooltip: 'Pan Left',
-                        width: 32,
-                      ),
-                      Container(
-                        width: 1,
-                        height: 32,
-                        color: Colors.grey[300],
-                      ),
-                      _buildMapControlButton(
-                        icon: Icons.my_location,
-                        onPressed: _resetMapView,
-                        tooltip: 'Reset View',
-                        width: 32,
-                      ),
-                      Container(
-                        width: 1,
-                        height: 32,
-                        color: Colors.grey[300],
-                      ),
-                      _buildMapControlButton(
-                        icon: Icons.keyboard_arrow_right,
-                        onPressed: () => _panMap(0, 0.1),
-                        tooltip: 'Pan Right',
-                        width: 32,
-                      ),
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(12),
+              shadowColor: Colors.black.withOpacity(0.15),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      Colors.grey.shade50,
                     ],
                   ),
-                  // Pan down
-                  _buildMapControlButton(
-                    icon: Icons.keyboard_arrow_down,
-                    onPressed: () => _panMap(-0.1, 0),
-                    tooltip: 'Pan Down',
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                    width: 1,
                   ),
-                ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(height: 2),
+                    // Zoom In
+                    _buildMapControlButton(
+                      icon: Icons.add_rounded,
+                      onPressed: _zoomIn,
+                      tooltip: 'Zoom In',
+                    ),
+                    Container(
+                      height: 1,
+                      width: 32,
+                      color: Colors.grey.shade200,
+                    ),
+                    // Zoom Out
+                    _buildMapControlButton(
+                      icon: Icons.remove_rounded,
+                      onPressed: _zoomOut,
+                      tooltip: 'Zoom Out',
+                    ),
+                    Container(
+                      height: 1,
+                      width: 32,
+                      color: Colors.grey.shade200,
+                    ),
+                    // Pan Up
+                    _buildMapControlButton(
+                      icon: Icons.keyboard_arrow_up_rounded,
+                      onPressed: () => _panMap(0.1, 0),
+                      tooltip: 'Pan Up',
+                    ),
+                    // Pan controls row
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildMapControlButton(
+                          icon: Icons.keyboard_arrow_left_rounded,
+                          onPressed: () => _panMap(0, -0.1),
+                          tooltip: 'Pan Left',
+                        ),
+                        Container(width: 1, height: 36, color: Colors.grey.shade200),
+                        _buildMapControlButton(
+                          icon: Icons.my_location_rounded,
+                          onPressed: _resetMapView,
+                          tooltip: 'Reset View',
+                          isPrimary: true,
+                        ),
+                        Container(width: 1, height: 36, color: Colors.grey.shade200),
+                        _buildMapControlButton(
+                          icon: Icons.keyboard_arrow_right_rounded,
+                          onPressed: () => _panMap(0, 0.1),
+                          tooltip: 'Pan Right',
+                        ),
+                      ],
+                    ),
+                    // Pan Down
+                    _buildMapControlButton(
+                      icon: Icons.keyboard_arrow_down_rounded,
+                      onPressed: () => _panMap(-0.1, 0),
+                      tooltip: 'Pan Down',
+                    ),
+                    SizedBox(height: 2),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1863,17 +1873,30 @@ Best regards''',
     required IconData icon,
     required VoidCallback onPressed,
     required String tooltip,
-    double? width,
+    bool isPrimary = false,
   }) {
     return Tooltip(
       message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        child: Container(
-          width: width ?? 80,
-          height: 32,
-          alignment: Alignment.center,
-          child: Icon(icon, size: 16, color: Colors.grey[700]),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(8),
+          hoverColor: isPrimary 
+              ? AppTheme.brandPrimary.withOpacity(0.08)
+              : Colors.grey.shade100,
+          child: Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            child: Icon(
+              icon, 
+              size: 18, 
+              color: isPrimary 
+                  ? AppTheme.brandPrimary
+                  : Colors.grey.shade700,
+            ),
+          ),
         ),
       ),
     );
