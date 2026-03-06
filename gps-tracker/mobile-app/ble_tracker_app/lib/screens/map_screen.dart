@@ -337,47 +337,53 @@ class _MapScreenState extends State<MapScreen> {
         _isLoading = false;
       });
       
-      // Auto-fit map to show all markers after frame is rendered (only on first load)
-      if (positions.isNotEmpty && _isFirstLoad) {
-        print('📐 MapScreen: Auto-fitting map to ${positions.length} vehicle(s) (first load)');
+      // Auto-fit map to show all markers after frame is rendered
+      if (positions.isNotEmpty) {
+        print('📐 MapScreen: Auto-fitting map to ${positions.length} vehicle(s)');
         
         // Mark as no longer first load
         _isFirstLoad = false;
         
-        // Wait for next frame to ensure map is ready
+        // Wait for next frame to ensure map is ready, then add a small delay for map initialization
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
           
-          if (_useAppleMaps && _appleMapController != null) {
-            // Apple Maps: animate to region
-            if (positions.length == 1) {
-              await _appleMapController!.animateCamera(
-                apple.CameraUpdate.newLatLng(
-                  apple.LatLng(positions[0].latitude, positions[0].longitude),
-                ),
-              );
-            } else {
-              // Calculate bounds for multiple positions
-              double minLat = positions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
-              double maxLat = positions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
-              double minLng = positions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
-              double maxLng = positions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
+          // Small delay to ensure map controllers are fully initialized
+          await Future.delayed(Duration(milliseconds: 500));
+          if (!mounted) return;
+          
+          try {
+            if (_useAppleMaps && _appleMapController != null) {
+              // Apple Maps: animate to region
+              if (positions.length == 1) {
+                await _appleMapController!.animateCamera(
+                  apple.CameraUpdate.newLatLngZoom(
+                    apple.LatLng(positions[0].latitude, positions[0].longitude),
+                    15.0,
+                  ),
+                );
+              } else {
+                // Calculate bounds for multiple positions
+                double minLat = positions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
+                double maxLat = positions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
+                double minLng = positions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
+                double maxLng = positions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
+                
+                final bounds = apple.LatLngBounds(
+                  southwest: apple.LatLng(minLat, minLng),
+                  northeast: apple.LatLng(maxLat, maxLng),
+                );
+                
+                await _appleMapController!.animateCamera(
+                  apple.CameraUpdate.newLatLngBounds(bounds, 80),
+                );
+              }
+              print('📍 MapScreen: Fitted Apple Map to show all ${positions.length} vehicles');
+            } else if (_useGoogleMaps && _googleMapController != null) {
+              // Google Maps: animate to bounds
+              final controller = await _googleMapController!.future;
               
-              final bounds = apple.LatLngBounds(
-                southwest: apple.LatLng(minLat, minLng),
-                northeast: apple.LatLng(maxLat, maxLng),
-              );
-              
-              await _appleMapController!.animateCamera(
-                apple.CameraUpdate.newLatLngBounds(bounds, 80),
-              );
-            }
-            print('📍 MapScreen: Fitted Apple Map to show all ${positions.length} vehicles');
-          } else if (_useGoogleMaps && _googleMapController != null) {
-            // Google Maps: animate to bounds
-            final controller = await _googleMapController!.future;
-            
-            if (positions.length == 1) {
+              if (positions.length == 1) {
               await controller.animateCamera(
                 gmaps.CameraUpdate.newLatLngZoom(positions[0], 15.0),
               );
@@ -425,6 +431,10 @@ class _MapScreenState extends State<MapScreen> {
               );
             }
             print('📍 MapScreen: Fitted Flutter Map to show all ${positions.length} vehicles');
+          } catch (e) {
+            print('⚠️ MapScreen: Error auto-fitting map: $e');
+            _logger.error('Auto-fit failed: $e');
+            // Continue anyway - map will show with initial zoom
           }
         });
       }
