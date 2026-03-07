@@ -337,9 +337,18 @@ class _MapScreenState extends State<MapScreen> {
         _isLoading = false;
       });
       
-      // Auto-fit map to show all markers after frame is rendered
-      if (positions.isNotEmpty) {
-        print('📐 MapScreen: Auto-fitting map to ${positions.length} vehicle(s)');
+      // Filter positions to only include UK coordinates
+      // UK bounds: Latitude 49.5 to 61.0, Longitude -8.5 to 2.0
+      final ukPositions = positions.where((pos) {
+        return pos.latitude >= 49.5 && pos.latitude <= 61.0 &&
+               pos.longitude >= -8.5 && pos.longitude <= 2.0;
+      }).toList();
+      
+      print('📐 MapScreen: Filtered ${ukPositions.length} UK vehicles from ${positions.length} total');
+      
+      // Auto-fit map to show UK markers only
+      if (ukPositions.isNotEmpty) {
+        print('📐 MapScreen: Auto-fitting map to ${ukPositions.length} UK vehicle(s)');
         
         // Mark as no longer first load
         _isFirstLoad = false;
@@ -355,19 +364,19 @@ class _MapScreenState extends State<MapScreen> {
           try {
             if (_useAppleMaps && _appleMapController != null) {
               // Apple Maps: animate to region
-              if (positions.length == 1) {
+              if (ukPositions.length == 1) {
                 await _appleMapController!.animateCamera(
                   apple.CameraUpdate.newLatLngZoom(
-                    apple.LatLng(positions[0].latitude, positions[0].longitude),
+                    apple.LatLng(ukPositions[0].latitude, ukPositions[0].longitude),
                     15.0,
                   ),
                 );
               } else {
                 // Calculate bounds for multiple positions
-                double minLat = positions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
-                double maxLat = positions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
-                double minLng = positions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
-                double maxLng = positions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
+                double minLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
+                double maxLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
+                double minLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
+                double maxLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
                 
                 final bounds = apple.LatLngBounds(
                   southwest: apple.LatLng(minLat, minLng),
@@ -378,21 +387,21 @@ class _MapScreenState extends State<MapScreen> {
                   apple.CameraUpdate.newLatLngBounds(bounds, 80),
                 );
               }
-              print('📍 MapScreen: Fitted Apple Map to show all ${positions.length} vehicles');
+              print('📍 MapScreen: Fitted Apple Map to show ${ukPositions.length} UK vehicles');
             } else if (_useGoogleMaps && _googleMapController != null) {
               // Google Maps: animate to bounds
               final controller = await _googleMapController!.future;
               
-              if (positions.length == 1) {
+              if (ukPositions.length == 1) {
               await controller.animateCamera(
-                gmaps.CameraUpdate.newLatLngZoom(positions[0], 15.0),
+                gmaps.CameraUpdate.newLatLngZoom(ukPositions[0], 15.0),
               );
             } else {
               // Calculate bounds for multiple positions
-              double minLat = positions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
-              double maxLat = positions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
-              double minLng = positions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
-              double maxLng = positions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
+              double minLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
+              double maxLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
+              double minLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
+              double maxLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
               
               final bounds = gmaps.LatLngBounds(
                 southwest: gmaps.LatLng(minLat, minLng),
@@ -403,20 +412,20 @@ class _MapScreenState extends State<MapScreen> {
                 gmaps.CameraUpdate.newLatLngBounds(bounds, 80),
               );
             }
-            print('📍 MapScreen: Fitted Google Map to show all ${positions.length} vehicles');
+            print('📍 MapScreen: Fitted Google Map to show ${ukPositions.length} UK vehicles');
           } else if (_useFlutterMap) {
             // Flutter Map (Web): fit bounds
-            if (positions.length == 1) {
+            if (ukPositions.length == 1) {
               _flutterMapController.move(
-                latlong.LatLng(positions[0].latitude, positions[0].longitude),
+                latlong.LatLng(ukPositions[0].latitude, ukPositions[0].longitude),
                 15.0,
               );
             } else {
               // Calculate bounds for multiple positions
-              double minLat = positions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
-              double maxLat = positions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
-              double minLng = positions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
-              double maxLng = positions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
+              double minLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
+              double maxLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
+              double minLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
+              double maxLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
               
               final bounds = fmap.LatLngBounds(
                 latlong.LatLng(minLat, minLng),
@@ -430,7 +439,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               );
             }
-            print('📍 MapScreen: Fitted Flutter Map to show all ${positions.length} vehicles');
+            print('📍 MapScreen: Fitted Flutter Map to show ${ukPositions.length} UK vehicles');
           } catch (e) {
             print('⚠️ MapScreen: Error auto-fitting map: $e');
             _logger.error('Auto-fit failed: $e');
