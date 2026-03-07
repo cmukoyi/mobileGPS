@@ -393,27 +393,27 @@ class _MapScreenState extends State<MapScreen> {
               final controller = await _googleMapController!.future;
               
               if (ukPositions.length == 1) {
-              await controller.animateCamera(
-                gmaps.CameraUpdate.newLatLngZoom(ukPositions[0], 15.0),
-              );
-            } else {
-              // Calculate bounds for multiple positions
-              double minLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
-              double maxLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
-              double minLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
-              double maxLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
-              
-              final bounds = gmaps.LatLngBounds(
-                southwest: gmaps.LatLng(minLat, minLng),
-                northeast: gmaps.LatLng(maxLat, maxLng),
-              );
-              
-              await controller.animateCamera(
-                gmaps.CameraUpdate.newLatLngBounds(bounds, 80),
-              );
-            }
-            print('📍 MapScreen: Fitted Google Map to show ${ukPositions.length} UK vehicles');
-          } else if (_useFlutterMap) {
+                await controller.animateCamera(
+                  gmaps.CameraUpdate.newLatLngZoom(ukPositions[0], 15.0),
+                );
+              } else {
+                // Calculate bounds for multiple positions
+                double minLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
+                double maxLat = ukPositions.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
+                double minLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a < b ? a : b);
+                double maxLng = ukPositions.map((p) => p.longitude).reduce((a, b) => a > b ? a : b);
+                
+                final bounds = gmaps.LatLngBounds(
+                  southwest: gmaps.LatLng(minLat, minLng),
+                  northeast: gmaps.LatLng(maxLat, maxLng),
+                );
+                
+                await controller.animateCamera(
+                  gmaps.CameraUpdate.newLatLngBounds(bounds, 80),
+                );
+              }
+              print('📍 MapScreen: Fitted Google Map to show ${ukPositions.length} UK vehicles');
+            } else if (_useFlutterMap) {
             // Flutter Map (Web): fit bounds
             if (ukPositions.length == 1) {
               _flutterMapController.move(
@@ -440,6 +440,7 @@ class _MapScreenState extends State<MapScreen> {
               );
             }
             print('📍 MapScreen: Fitted Flutter Map to show ${ukPositions.length} UK vehicles');
+          }
           } catch (e) {
             print('⚠️ MapScreen: Error auto-fitting map: $e');
             _logger.error('Auto-fit failed: $e');
