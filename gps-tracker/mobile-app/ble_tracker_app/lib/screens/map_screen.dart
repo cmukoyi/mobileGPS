@@ -1461,8 +1461,9 @@ Best regards''',
                     children: [
                       Image.asset(
                         'assets/logo.png',
-                        height: 40,
+                        height: 48,
                         fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
                       ),
                       Spacer(),
                       // Alerts button with badge
