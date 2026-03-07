@@ -1709,6 +1709,11 @@ Best regards''',
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.pinplot.tracker',
                 maxZoom: 19,
+                keepBuffer: 4, // Keep 4 extra zoom levels of tiles in memory
+                panBuffer: 2, // Load 2 extra tiles around viewport for smoother panning
+                tileDisplay: fmap.TileDisplay.fadeIn(
+                  duration: Duration(milliseconds: 150),
+                ),
                 additionalOptions: {
                   'attribution': '© OpenStreetMap contributors',
                 },
