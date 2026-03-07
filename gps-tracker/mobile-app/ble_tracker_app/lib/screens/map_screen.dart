@@ -1709,11 +1709,14 @@ Best regards''',
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.pinplot.tracker',
                 maxZoom: 19,
-                keepBuffer: 4, // Keep 4 extra zoom levels of tiles in memory
-                panBuffer: 2, // Load 2 extra tiles around viewport for smoother panning
+                keepBuffer: 8, // Keep 8 extra zoom levels in memory for smoother zooming
+                panBuffer: 4, // Load 4 extra tiles around viewport edges
+                maxNativeZoom: 19,
+                retinaMode: true, // Better quality on high-DPI screens
                 tileDisplay: fmap.TileDisplay.fadeIn(
-                  duration: Duration(milliseconds: 150),
+                  duration: Duration(milliseconds: 100),
                 ),
+                evictErrorTileStrategy: fmap.EvictErrorTileStrategy.notVisibleRespectMargin,
                 additionalOptions: {
                   'attribution': '© OpenStreetMap contributors',
                 },
