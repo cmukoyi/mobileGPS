@@ -1449,19 +1449,12 @@ Best regards''',
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
-                      Icon(Icons.home, color: Colors.white, size: 24),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Asset Tracker',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/logo.png',
+                        height: 40,
+                        fit: BoxFit.contain,
                       ),
-                      SizedBox(width: 12),
+                      Spacer(),
                       // Alerts button with badge
                       Stack(
                         children: [
