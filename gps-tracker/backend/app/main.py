@@ -13,7 +13,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from app.database import get_db, init_db
-from app.models import User, VerificationPIN, BLETag, POI, POITrackerLink, GeofenceAlert, PasswordResetToken
+from app.models import User, VerificationPIN, BLETag, POI, POITrackerLink, GeofenceAlert, PasswordResetToken, GeofenceState
 from app.auth import verify_password, get_password_hash, create_access_token, decode_token
 from app.services.email_service import EmailService
 from app.services.mzone_service import mzone_service
@@ -1547,7 +1547,8 @@ def arm_poi_to_tracker(
     link = POITrackerLink(
         poi_id=poi_id,
         tracker_id=tracker_id,
-        is_armed=True
+        is_armed=True,
+        last_known_state=GeofenceState.UNKNOWN
     )
     
     db.add(link)
