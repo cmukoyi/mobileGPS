@@ -350,6 +350,18 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.post("/api/v1/auth/refresh", response_model=Token)
+def refresh_token(current_user: User = Depends(get_current_user)):
+    """
+    Refresh JWT token for active users.
+    Returns a new token with extended expiration.
+    Call this endpoint before the current token expires.
+    """
+    # Create new token with same user ID
+    access_token = create_access_token(data={"sub": str(current_user.id)})
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+
 @app.post("/api/v1/auth/send-verification-code")
 def send_verification_code(request: SendVerificationCodeRequest, db: Session = Depends(get_db)):
     """Send verification PIN to email"""

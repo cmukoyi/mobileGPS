@@ -20,6 +20,15 @@ class POIService {
     };
   }
 
+  // Handle 401 Unauthorized responses (expired token)
+  void _handle401(http.Response response) {
+    if (response.statusCode == 401) {
+      _logger.error('🔒 Token expired or invalid - logging out');
+      _authService.logout();
+      throw Exception('SESSION_EXPIRED');
+    }
+  }
+
   // ==================== POI Management ====================
 
   Future<POI> createPOI(POICreateRequest request) async {
@@ -32,6 +41,8 @@ class POIService {
         headers: headers,
         body: jsonEncode(request.toJson()),
       );
+
+      _handle401(response);
 
       if (response.statusCode == 200) {
         final poi = POI.fromJson(jsonDecode(response.body));
@@ -56,6 +67,8 @@ class POIService {
         Uri.parse('$baseUrl/pois'),
         headers: headers,
       );
+
+      _handle401(response);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -82,6 +95,8 @@ class POIService {
         headers: headers,
       );
 
+      _handle401(response);
+
       if (response.statusCode == 200) {
         return POI.fromJson(jsonDecode(response.body));
       } else {
@@ -103,6 +118,8 @@ class POIService {
         headers: headers,
         body: jsonEncode(updates),
       );
+
+      _handle401(response);
 
       if (response.statusCode == 200) {
         final poi = POI.fromJson(jsonDecode(response.body));
@@ -127,6 +144,8 @@ class POIService {
         headers: headers,
       );
 
+      _handle401(response);
+
       if (response.statusCode == 200) {
         _logger.success('POI deleted successfully');
       } else {
@@ -150,6 +169,8 @@ class POIService {
         headers: headers,
       );
 
+      _handle401(response);
+
       if (response.statusCode == 200) {
         _logger.success('POI armed successfully');
       } else {
@@ -170,6 +191,8 @@ class POIService {
         Uri.parse('$baseUrl/pois/$poiId/disarm/$trackerId'),
         headers: headers,
       );
+
+      _handle401(response);
 
       if (response.statusCode == 200) {
         _logger.success('POI disarmed successfully');
@@ -202,6 +225,8 @@ class POIService {
       final uri = Uri.parse('$baseUrl/alerts').replace(queryParameters: queryParams);
       final response = await http.get(uri, headers: headers);
 
+      _handle401(response);
+
       if (response.statusCode == 200) {
         final alertsResponse = AlertsResponse.fromJson(jsonDecode(response.body));
         _logger.success('Fetched ${alertsResponse.alerts.length} alerts (${alertsResponse.unreadCount} unread)');
@@ -225,6 +250,8 @@ class POIService {
         headers: headers,
       );
 
+      _handle401(response);
+
       if (response.statusCode == 200) {
         _logger.success('Alert marked as read');
       } else {
@@ -245,6 +272,8 @@ class POIService {
         Uri.parse('$baseUrl/alerts/mark-all-read'),
         headers: headers,
       );
+
+      _handle401(response);
 
       if (response.statusCode == 200) {
         _logger.success('All alerts marked as read');

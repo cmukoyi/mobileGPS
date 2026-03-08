@@ -60,6 +60,61 @@ class AuthService {
     await _clearCachedTags();
     print('🚪 User logged out and cache cleared');
   }
+
+  // Get token age in minutes
+  Future<int> getTokenAgeMinutes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedAt = prefs.getInt('token_saved_at');
+      if (savedAt == null) return 999; // Very old
+      
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final ageMs = now - savedAt;
+      return (ageMs / 1000 / 60).round();
+    } catch (e) {
+      return 999; // Error = treat as very old
+    }
+  }
+
+  // Check if token needs refresh (older than 20 minutes)
+  Future<bool> shouldRefreshToken() async {
+    final age = await getTokenAgeMinutes();
+    return age >= 20; // Refresh if 20+ minutes old (expires at 30)
+  }
+
+  // Refresh the JWT token
+  Future<bool> refreshToken() async {
+    try {
+      final currentToken = await getToken();
+      if (currentToken == null) return false;
+
+      _logger.info('🔄 Refreshing token...');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/v1/auth/refresh'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $currentToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final newToken = data['access_token'];
+        
+        // Save new token
+        await _saveToken(newToken);
+        _logger.success('✅ Token refreshed successfully');
+        return true;
+      } else {
+        _logger.error('❌ Token refresh failed: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      _logger.error('❌ Token refresh error: $e');
+      return false;
+    }
+  }
   
   // Check if user has any tags (checks cache first, then API)
   Future<bool> hasTags() async {

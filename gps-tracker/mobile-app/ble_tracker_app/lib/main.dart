@@ -5,6 +5,7 @@ import 'package:ble_tracker_app/screens/auth/reset_password_screen.dart';
 import 'package:ble_tracker_app/screens/map_screen.dart';
 import 'package:ble_tracker_app/screens/poi_management_screen.dart';
 import 'package:ble_tracker_app/services/auth_service.dart';
+import 'package:ble_tracker_app/services/token_refresh_manager.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,16 +16,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Asset Tracker',
-      theme: AppTheme.lightTheme,
-      debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
-      routes: {
-        '/welcome': (context) => const WelcomeScreen(),
-        '/map': (context) => const MapScreen(),
-        '/poi-management': (context) => const POIManagementScreen(),
-      },
+    return ActivityMonitor(
+      child: MaterialApp(
+        title: 'Asset Tracker',
+        theme: AppTheme.lightTheme,
+        debugShowCheckedModeBanner: false,
+        home: const SplashScreen(),
+        routes: {
+          '/welcome': (context) => const WelcomeScreen(),
+          '/map': (context) => const MapScreen(),
+          '/poi-management': (context) => const POIManagementScreen(),
+        },
+      ),
     );
   }
 }
