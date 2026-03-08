@@ -46,7 +46,7 @@ rsync -avz --delete \
 # Deploy on server
 echo "🐳 Starting Docker containers on server..."
 ssh $USERNAME@$SERVER_IP << 'ENDSSH'
-    cd ~/gps-tracker/gps-tracker
+    cd ~/gps-tracker
     
     # Check if .env exists
     if [ ! -f backend/.env ]; then
@@ -108,7 +108,7 @@ echo "   Admin Dashboard:    http://$SERVER_IP:3000"
 echo "   Customer Dashboard: http://$SERVER_IP:3001"
 echo ""
 echo "📝 View logs:"
-echo "   ssh $USERNAME@$SERVER_IP 'cd ~/gps-tracker/gps-tracker && docker-compose logs -f'"
+echo "   ssh $USERNAME@$SERVER_IP 'cd ~/gps-tracker && docker-compose logs -f'"
 echo ""
 echo "🔄 Restart services:"
-echo "   ssh $USERNAME@$SERVER_IP 'cd ~/gps-tracker/gps-tracker && docker-compose restart'"
+echo "   ssh $USERNAME@$SERVER_IP 'cd ~/gps-tracker && docker-compose restart'"

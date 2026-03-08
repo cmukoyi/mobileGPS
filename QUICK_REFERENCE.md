@@ -38,19 +38,19 @@ ssh root@161.35.38.209
 
 ### Check All Services
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose ps'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose ps'
 ```
 
 ### View Logs
 ```bash
 # All logs
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose logs -f'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose logs -f'
 
 # Backend only
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose logs -f backend'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose logs -f backend'
 
 # Last 100 lines
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose logs --tail=100'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose logs --tail=100'
 ```
 
 ### Check Health
@@ -70,50 +70,50 @@ ssh root@161.35.38.209 'docker stats --no-stream'
 
 ### Restart All Services
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose restart'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose restart'
 ```
 
 ### Restart Specific Service
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose restart backend'
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose restart nginx'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose restart backend'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose restart nginx'
 ```
 
 ### Stop All Services
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose down'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose down'
 ```
 
 ### Start All Services
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose up -d'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose up -d'
 ```
 
 ### Rebuild and Restart
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose up -d --build'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose up -d --build'
 ```
 
 ## 🗄️ Database
 
 ### Backup Database
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose exec postgres pg_dump -U gpsuser gpsdb > backup_$(date +%Y%m%d_%H%M%S).sql'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose exec postgres pg_dump -U gpsuser gpsdb > backup_$(date +%Y%m%d_%H%M%S).sql'
 ```
 
 ### Download Backup
 ```bash
-scp root@161.35.38.209:~/gps-tracker/gps-tracker/backup_*.sql ./backups/
+scp root@161.35.38.209:~/gps-tracker/backup_*.sql ./backups/
 ```
 
 ### Access Database
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose exec postgres psql -U gpsuser gpsdb'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose exec postgres psql -U gpsuser gpsdb'
 ```
 
 ### Check Database Size
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose exec postgres psql -U gpsuser gpsdb -c "SELECT pg_size_pretty(pg_database_size('"'"'gpsdb'"'"'));"'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose exec postgres psql -U gpsuser gpsdb -c "SELECT pg_size_pretty(pg_database_size('"'"'gpsdb'"'"'));"'
 ```
 
 ## 🔐 SSL Certificate
@@ -126,7 +126,7 @@ ssh root@161.35.38.209 'sudo certbot certificates'
 ### Renew Certificate
 ```bash
 ssh root@161.35.38.209 'sudo certbot renew'
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose restart nginx'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose restart nginx'
 ```
 
 ### Test Renewal
@@ -138,7 +138,7 @@ ssh root@161.35.38.209 'sudo certbot renew --dry-run'
 
 ### Check Email Service
 ```bash
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose logs backend | grep "Email Service"'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose logs backend | grep "Email Service"'
 ```
 
 ### SendGrid Dashboard
@@ -198,43 +198,43 @@ Output: `build/app/outputs/flutter-apk/app-release.apk`
 ping 161.35.38.209
 
 # Check if services are running
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose ps'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose ps'
 
 # Check nginx logs
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose logs nginx'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose logs nginx'
 ```
 
 ### API Not Working
 ```bash
 # Check backend logs
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose logs backend --tail=50'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose logs backend --tail=50'
 
 # Restart backend
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose restart backend'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose restart backend'
 ```
 
 ### Emails Not Sending
 ```bash
 # Check email service configuration
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose logs backend | grep -i email'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose logs backend | grep -i email'
 
 # Check environment variables
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose exec backend env | grep SENDGRID'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose exec backend env | grep SENDGRID'
 ```
 
 ### Database Issues
 ```bash
 # Check database logs
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose logs postgres'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose logs postgres'
 
 # Test connection
-ssh root@161.35.38.209 'cd ~/gps-tracker/gps-tracker && docker-compose exec postgres psql -U gpsuser gpsdb -c "SELECT 1;"'
+ssh root@161.35.38.209 'cd ~/gps-tracker && docker-compose exec postgres psql -U gpsuser gpsdb -c "SELECT 1;"'
 ```
 
 ## 📁 Important Files on Server
 
 ```
-~/gps-tracker/gps-tracker/
+~/gps-tracker/
 ├── docker-compose.yml          # Service orchestration
 ├── backend/.env               # Environment variables (SENSITIVE!)
 ├── nginx/nginx.conf          # Reverse proxy config

@@ -162,7 +162,7 @@ class POITrackerLink(Base):
     disarmed_at = Column(DateTime(timezone=True), nullable=True)
     
     # State tracking for alert generation
-    last_known_state = Column(Enum(GeofenceState), default=GeofenceState.UNKNOWN, nullable=False)
+    last_known_state = Column(Enum(GeofenceState, values_callable=lambda x: [e.value for e in x]), default=GeofenceState.UNKNOWN, nullable=False)
     last_state_check = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
