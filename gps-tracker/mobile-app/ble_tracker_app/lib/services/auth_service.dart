@@ -836,4 +836,125 @@ class AuthService {
   
   String? get token => _token;
   bool get isAuthenticated => _token != null;
+
+  // Request password reset email
+  Future<void> requestPasswordReset(String email) async {
+    _logger.info('requestPasswordReset: Sending reset email to $email');
+    print('\n========== REQUEST PASSWORD RESET START ==========');
+    print('📧 Email: $email');
+    print('🌐 Calling: POST $baseUrl/api/v1/auth/forgot-password');
+    
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/v1/auth/forgot-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({'email': email}),
+      ).timeout(
+        Duration(seconds: 10),
+        onTimeout: () {
+          print('⏱️ REQUEST TIMED OUT after 10 seconds!');
+          throw Exception('Request timed out. Please try again.');
+        },
+      );
+      
+      print('📊 Response status: ${response.statusCode}');
+      print('📄 Response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        _logger.success('requestPasswordReset: Reset email sent successfully');
+        print('✅ Password reset email sent successfully');
+        print('========== REQUEST PASSWORD RESET END ==========\n');
+      } else {
+        print('❌ Non-200 status code received');
+        try {
+          final errorData = json.decode(response.body);
+          final detail = errorData['detail'] ?? 'Failed to send reset email';
+          throw Exception(detail);
+        } catch (e) {
+          if (e.toString().contains('detail')) {
+            rethrow;
+          }
+          throw Exception('Failed to send reset email');
+        }
+      }
+    } on http.ClientException catch (e) {
+      _logger.error('requestPasswordReset: Network error', e);
+      print('❌ HTTP Client Exception: $e');
+      print('========== REQUEST PASSWORD RESET ERROR END ==========\n');
+      throw Exception('Network error. Please check your connection.');
+    } catch (e, stackTrace) {
+      _logger.error('requestPasswordReset: Error', e);
+      print('❌ Unexpected error: $e');
+      print('📚 Stack trace:');
+      print(stackTrace.toString().split('\n').take(10).join('\n'));
+      print('========== REQUEST PASSWORD RESET ERROR END ==========\n');
+      String errorMsg = _extractErrorMessage(e, defaultMessage: 'Failed to send reset email. Please try again.');
+      throw Exception(errorMsg);
+    }
+  }
+
+  // Reset password with token
+  Future<void> resetPassword(String token, String newPassword) async {
+    _logger.info('resetPassword: Attempting password reset with token');
+    print('\n========== RESET PASSWORD START ==========');
+    print('🔑 Token: ${token.substring(0, 10)}...');
+    print('🌐 Calling: POST $baseUrl/api/v1/auth/reset-password');
+    
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/v1/auth/reset-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'token': token,
+          'new_password': newPassword,
+        }),
+      ).timeout(
+        Duration(seconds: 10),
+        onTimeout: () {
+          print('⏱️ REQUEST TIMED OUT after 10 seconds!');
+          throw Exception('Request timed out. Please try again.');
+        },
+      );
+      
+      print('📊 Response status: ${response.statusCode}');
+      print('📄 Response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        _logger.success('resetPassword: Password reset successfully');
+        print('✅ Password reset successfully');
+        print('========== RESET PASSWORD END ==========\n');
+      } else {
+        print('❌ Non-200 status code received');
+        try {
+          final errorData = json.decode(response.body);
+          final detail = errorData['detail'] ?? 'Failed to reset password';
+          throw Exception(detail);
+        } catch (e) {
+          if (e.toString().contains('detail')) {
+            rethrow;
+          }
+          throw Exception('Failed to reset password');
+        }
+      }
+    } on http.ClientException catch (e) {
+      _logger.error('resetPassword: Network error', e);
+      print('❌ HTTP Client Exception: $e');
+      print('========== RESET PASSWORD ERROR END ==========\n');
+      throw Exception('Network error. Please check your connection.');
+    } catch (e, stackTrace) {
+      _logger.error('resetPassword: Error', e);
+      print('❌ Unexpected error: $e');
+      print('📚 Stack trace:');
+      print(stackTrace.toString().split('\n').take(10).join('\n'));
+      print('========== RESET PASSWORD ERROR END ==========\n');
+      String errorMsg = _extractErrorMessage(e, defaultMessage: 'Failed to reset password. Please try again.');
+      throw Exception(errorMsg);
+    }
+  }
 }

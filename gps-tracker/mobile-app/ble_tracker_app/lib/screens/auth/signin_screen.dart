@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:ble_tracker_app/theme/app_theme.dart';
 import 'package:ble_tracker_app/services/auth_service.dart';
 import 'package:ble_tracker_app/screens/home_screen.dart';
+import 'package:ble_tracker_app/screens/auth/forgot_password_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({Key? key}) : super(key: key);
@@ -368,10 +369,10 @@ class _SignInScreenState extends State<SignInScreen> {
                       Center(
                         child: TextButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Password reset coming soon'),
-                                backgroundColor: AppTheme.brandPrimary,
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ForgotPasswordScreen(),
                               ),
                             );
                           },
