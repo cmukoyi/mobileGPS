@@ -179,7 +179,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Geofence Alerts'),
+            const Text('Location Alerts'),
             if (_unreadCount > 0)
               Text(
                 '$_unreadCount unread',

@@ -688,7 +688,7 @@ class _MapScreenState extends State<MapScreen> {
                     SizedBox(width: 8),
                     Expanded(
                       child: ChoiceChip(
-                        label: Text('Start/End Location'),
+                        label: Text('From | To'),
                         selected: poiType == POIType.route,
                         onSelected: (selected) {
                           if (selected) {
@@ -1510,6 +1510,32 @@ Best regards''',
                           child: Icon(Icons.person, color: AppTheme.brandPrimary),
                         ),
                         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          FutureBuilder<String?>(
+                            future: _authService.getUserEmail(),
+                            builder: (context, snapshot) {
+                              final email = snapshot.data ?? 'Loading...';
+                              return PopupMenuItem<String>(
+                                enabled: false,
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.email, size: 18, color: Colors.grey[600]),
+                                    SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        email,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[800],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                           PopupMenuItem<String>(
                             enabled: false,
                             child: Row(
@@ -2963,7 +2989,7 @@ View on $mapProvider to see the vehicle location.''';
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Geofence Alerts',
+                                  'Location Alerts',
                                   style: GoogleFonts.inter(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -3027,7 +3053,7 @@ View on $mapProvider to see the vehicle location.''';
                 icon: Icons.refresh_rounded,
                 iconColor: Colors.purple.shade600,
                 iconBg: Colors.purple.shade50,
-                title: 'Refresh Locations',
+                title: 'Refresh GPS Positions',
                 subtitle: 'Update all tracker positions',
                 onTap: _loadTags,
               ),

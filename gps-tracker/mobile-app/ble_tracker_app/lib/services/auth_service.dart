@@ -34,12 +34,21 @@ class AuthService {
   }
   
   // Save token to persistent storage with timestamp
-  Future<void> _saveToken(String token) async {
+  Future<void> _saveToken(String token, {String? email}) async {
     _token = token;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
     await prefs.setInt('token_saved_at', DateTime.now().millisecondsSinceEpoch);
+    if (email != null) {
+      await prefs.setString('user_email', email);
+    }
     print('✅ Token saved to storage at ${DateTime.now().toIso8601String()}');
+  }
+  
+  // Get current user's email
+  Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_email');
   }
   
   // Clear token from storage
@@ -47,6 +56,7 @@ class AuthService {
     _token = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove('user_email');
     await _clearCachedTags();
     print('🚪 User logged out and cache cleared');
   }
@@ -360,7 +370,7 @@ class AuthService {
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
-        await _saveToken(data['access_token']);
+        await _saveToken(data['access_token'], email: email);
         print('✅ Registration successful! Token received.');
         print('========== REGISTER END ==========\n');
       } else {
@@ -408,7 +418,7 @@ class AuthService {
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        await _saveToken(data['access_token']);
+        await _saveToken(data['access_token'], email: email);
         _logger.success('signIn: Login successful for $email');
         print('✅ Login successful! Token saved.');
       } else {

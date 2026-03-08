@@ -214,7 +214,7 @@ class _POIManagementScreenState extends State<POIManagementScreen> {
                         ),
                       SizedBox(height: 4),
                       Text(
-                        poi.isRoute ? '� Start/End Location' : '📍 Single Location',
+                        poi.isRoute ? '🚩 From | To' : '📍 Single Location',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
