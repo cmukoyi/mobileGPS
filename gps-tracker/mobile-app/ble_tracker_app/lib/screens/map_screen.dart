@@ -757,12 +757,13 @@ class _MapScreenState extends State<MapScreen> {
                       hint: Text('Select tracker to monitor'),
                       items: availableTags.map((tag) {
                         final tagId = tag['id']?.toString() ?? tag['imei']?.toString();
-                        final description = tag['device_name'];
+                        final description = tag['description'];
+                        final deviceName = tag['device_name'];
                         final imei = tag['imei'];
-                        // Show description first if available, otherwise IMEI
+                        // Show IMEI when toggle is on, otherwise prioritize description > device_name > IMEI
                         final displayName = showImei 
-                          ? (imei ?? description ?? 'Unknown Tracker')
-                          : (description ?? imei ?? 'Unknown Tracker');
+                          ? (imei ?? 'Unknown Tracker')
+                          : (description ?? deviceName ?? imei ?? 'Unknown Tracker');
                         return DropdownMenuItem<String>(
                           value: tagId,
                           child: Text(displayName),
