@@ -294,6 +294,116 @@ class EmailService:
             print(f"Error sending geofence alert email: {e}")
             return False
     
+    def send_password_reset_email(self, to_email: str, reset_token: str, first_name: Optional[str] = None) -> bool:
+        """Send password reset email with reset link"""
+        try:
+            # Get base URL from environment or default
+            base_url = os.getenv("FRONTEND_URL", "https://pinplot.me")
+            reset_link = f"{base_url}?reset_token={reset_token}"
+            
+            # Development mode - print to console (but still send email)
+            if self.debug:
+                print(f"\n{'='*60}")
+                print(f"🔑 PASSWORD RESET for {to_email}")
+                print(f"     Reset Link: {reset_link}")
+                print(f"     Token: {reset_token}")
+                print(f"{'='*60}\n")
+            
+            name = first_name if first_name else "there"
+            
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = 'Reset Your PinPlot Password'
+            msg['From'] = self.from_email
+            msg['To'] = to_email
+            
+            # Plain text version
+            text = f"""
+            Password Reset Request
+            
+            Hi {name},
+            
+            You requested to reset your password for your PinPlot account.
+            
+            Click the link below to reset your password:
+            {reset_link}
+            
+            This link will expire in 1 hour.
+            
+            If you didn't request a password reset, please ignore this email and your password will remain unchanged.
+            
+            Best regards,
+            PinPlot Team
+            """
+            
+            # HTML version
+            html = f"""
+            <html>
+              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <div style="background-color: #173C64; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h1 style="color: white; margin: 0; font-size: 28px;">🔑 Password Reset</h1>
+                  </div>
+                  <div style="background-color: #f4f4f4; padding: 30px; border-radius: 0 0 8px 8px;">
+                    <p style="font-size: 16px;">Hi {name},</p>
+                    <p style="font-size: 16px;">
+                      You requested to reset your password for your PinPlot account.
+                    </p>
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="{reset_link}" 
+                         style="display: inline-block; background-color: #173C64; color: white; 
+                                padding: 15px 40px; text-decoration: none; border-radius: 5px; 
+                                font-weight: bold; font-size: 16px;">
+                        Reset Password
+                      </a>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">
+                      This link will expire in <strong>1 hour</strong>.
+                    </p>
+                    <p style="color: #666; font-size: 14px;">
+                      If the button doesn't work, copy and paste this link into your browser:
+                    </p>
+                    <p style="background-color: #e8e8e8; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 12px;">
+                      {reset_link}
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+                    <p style="color: #999; font-size: 12px;">
+                      If you didn't request a password reset, please ignore this email and your password will remain unchanged.
+                    </p>
+                  </div>
+                  <p style="color: #999; font-size: 12px; margin-top: 20px; text-align: center;">
+                    Best regards,<br>PinPlot Team
+                  </p>
+                </div>
+              </body>
+            </html>
+            """
+            
+            # Send via SendGrid or SMTP
+            if self.use_sendgrid:
+                return self._send_via_sendgrid(
+                    to_email=to_email,
+                    subject='Reset Your PinPlot Password',
+                    text_content=text,
+                    html_content=html
+                )
+            else:
+                part1 = MIMEText(text, 'plain')
+                part2 = MIMEText(html, 'html')
+                msg.attach(part1)
+                msg.attach(part2)
+                
+                # Send email via SMTP
+                with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                    if self.smtp_user and self.smtp_password:
+                        server.starttls()
+                        server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.from_email, to_email, msg.as_string())
+                
+                return True
+        except Exception as e:
+            print(f"Error sending password reset email: {e}")
+            return False
+    
     def _send_via_sendgrid(self, to_email: str, subject: str, text_content: str, html_content: str) -> bool:
         """Send email using SendGrid API"""
         try:

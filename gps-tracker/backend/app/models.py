@@ -62,6 +62,21 @@ class VerificationPIN(Base):
     user = relationship("User", back_populates="verification_pins")
 
 
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    
+    id = get_uuid_column()
+    user_id = get_uuid_fk("users.id")
+    email = Column(String(255), nullable=False, index=True)
+    token = Column(String(64), nullable=False, unique=True, index=True)
+    is_used = Column(Boolean, default=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationship
+    user = relationship("User")
+
+
 class BLETag(Base):
     __tablename__ = "ble_tags"
     
