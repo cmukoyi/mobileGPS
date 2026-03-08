@@ -35,6 +35,7 @@ class _MapScreenState extends State<MapScreen> {
   int _selectedIndex = 0;
   int _unreadAlertCount = 0;
   Timer? _locationRefreshTimer; // Auto-refresh timer
+  String? _userEmail; // Store logged-in user's email
   
   // Platform-specific map controllers
   Completer<gmaps.GoogleMapController>? _googleMapController;
@@ -83,6 +84,14 @@ class _MapScreenState extends State<MapScreen> {
         );
       }
       return;
+    }
+    
+    // Load user email
+    final email = await _authService.getUserEmail();
+    if (mounted) {
+      setState(() {
+        _userEmail = email;
+      });
     }
     
     // User is authenticated - proceed with loading
@@ -1510,32 +1519,27 @@ Best regards''',
                           child: Icon(Icons.person, color: AppTheme.brandPrimary),
                         ),
                         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                          FutureBuilder<String?>(
-                            future: _authService.getUserEmail(),
-                            builder: (context, snapshot) {
-                              final email = snapshot.data ?? 'Loading...';
-                              return PopupMenuItem<String>(
-                                enabled: false,
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.email, size: 18, color: Colors.grey[600]),
-                                    SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        email,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[800],
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
+                          if (_userEmail != null)
+                            PopupMenuItem<String>(
+                              enabled: false,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.email, size: 18, color: Colors.grey[600]),
+                                  SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      _userEmail!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[800],
+                                        fontWeight: FontWeight.w500,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           PopupMenuItem<String>(
                             enabled: false,
                             child: Row(
