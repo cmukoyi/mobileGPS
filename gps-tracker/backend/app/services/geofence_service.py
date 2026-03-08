@@ -4,10 +4,10 @@ Geofence monitoring service for POI entry/exit detection
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from app.models import POI, BLETag, POITrackerLink, GeofenceAlert, GeofenceEventType, User, POIType
+from app.models import POI, BLETag, POITrackerLink, GeofenceAlert, GeofenceEventType, GeofenceState, User, POIType
 from app.services.email_service import EmailService
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -112,50 +112,67 @@ class GeofenceService:
         current_lat: float,
         current_lon: float
     ) -> List[GeofenceAlert]:
-        """Check single location POI for entry/exit events"""
+        """
+        Check single location POI for entry/exit events using state tracking.
+        Only generates alerts when state changes (inside<->outside).
+        """
         alerts = []
         
-        # Check if tracker is inside this geofence
+        # Get the POI-tracker link to access last_known_state
+        link = db.query(POITrackerLink).filter(
+            and_(
+                POITrackerLink.poi_id == poi.id,
+                POITrackerLink.tracker_id == tracker_id,
+                POITrackerLink.is_armed == True
+            )
+        ).first()
+        
+        if not link:
+            logger.warning(f"No armed link found for POI {poi.id} and tracker {tracker_id}")
+            return alerts
+        
+        # Determine current position state
         is_inside = GeofenceService.is_inside_geofence(
             current_lat, current_lon,
             poi.latitude, poi.longitude,
             poi.radius
         )
         
-        # Get the last alert for this POI-tracker combination
-        last_alert = db.query(GeofenceAlert).filter(
-            and_(
-                GeofenceAlert.poi_id == poi.id,
-                GeofenceAlert.tracker_id == tracker_id
-            )
-        ).order_by(GeofenceAlert.created_at.desc()).first()
+        current_state = GeofenceState.INSIDE if is_inside else GeofenceState.OUTSIDE
+        last_state = link.last_known_state
         
-        # Determine if we should generate an alert
+        # Only generate alert if state changed
         should_alert = False
         event_type = None
         
-        if last_alert:
-            # Check if state changed
-            was_inside = (last_alert.event_type == GeofenceEventType.ENTRY)
+        if last_state == GeofenceState.UNKNOWN:
+            # First check - always alert with current state
+            should_alert = True
+            event_type = GeofenceEventType.ENTRY if is_inside else GeofenceEventType.EXIT
+            logger.info(f"Initial state for {poi.name}, tracker {tracker_id}: {current_state.value}")
             
-            # Only alert if state changed and some time has passed (debouncing)
-            time_since_last = datetime.now(timezone.utc) - last_alert.created_at
-            debounce_seconds = 60  # Don't alert more than once per minute
+        elif last_state == GeofenceState.INSIDE and current_state == GeofenceState.OUTSIDE:
+            # State change: INSIDE → OUTSIDE (tracker left geofence)
+            should_alert = True
+            event_type = GeofenceEventType.EXIT
+            logger.info(f"State change for {poi.name}, tracker {tracker_id}: INSIDE → OUTSIDE")
             
-            if time_since_last.total_seconds() > debounce_seconds:
-                if is_inside and not was_inside:
-                    should_alert = True
-                    event_type = GeofenceEventType.ENTRY
-                elif not is_inside and was_inside:
-                    should_alert = True
-                    event_type = GeofenceEventType.EXIT
+        elif last_state == GeofenceState.OUTSIDE and current_state == GeofenceState.INSIDE:
+            # State change: OUTSIDE → INSIDE (tracker entered geofence)
+            should_alert = True
+            event_type = GeofenceEventType.ENTRY
+            logger.info(f"State change for {poi.name}, tracker {tracker_id}: OUTSIDE → INSIDE")
+            
         else:
-            # First time checking this POI-tracker combo
-            if is_inside:
-                should_alert = True
-                event_type = GeofenceEventType.ENTRY
+            # No state change - no alert
+            logger.debug(f"No state change for {poi.name}, tracker {tracker_id}: {current_state.value}")
         
-        # Generate alert if needed
+        # Update state tracking regardless of alert generation
+        link.last_known_state = current_state
+        link.last_state_check = datetime.now(timezone.utc)
+        db.add(link)
+        
+        # Generate alert if state changed
         if should_alert and event_type:
             alert = GeofenceAlert(
                 poi_id=poi.id,
@@ -170,10 +187,10 @@ class GeofenceService:
             alerts.append(alert)
             
             logger.info(
-                f"Single POI alert: {event_type.value} for {poi.name}, tracker {tracker_id}"
+                f"Single POI alert generated: tracker {event_type.value} {poi.name}"
             )
             
-            # Send email alert
+            # Send email alert with updated message format
             GeofenceService._send_email_alert(
                 db, user_id, tracker_id, poi, event_type, current_lat, current_lon
             )
@@ -322,16 +339,21 @@ class GeofenceService:
             else:
                 tracker_name = "GPS Tracker"
             
-            # Customize message for routes
-            if poi.poi_type == 'route' and location_name:
+            # Customize message format based on POI type and event
+            if poi.poi_type == POIType.ROUTE and location_name:
+                # Route-specific messages
                 if event_type == GeofenceEventType.EXIT and location_name == "origin":
-                    event_description = f"left origin"
+                    event_description = f"left origin ({poi.name})"
                 elif event_type == GeofenceEventType.ENTRY and location_name == "destination":
-                    event_description = f"arrived at destination"
+                    event_description = f"arrived at destination ({poi.name})"
                 else:
-                    event_description = f"at {location_name}"
+                    event_description = f"at {location_name} ({poi.name})"
             else:
-                event_description = event_type.value
+                # Single POI - use "inside" or "outside" messaging
+                if event_type == GeofenceEventType.ENTRY:
+                    event_description = f"inside {poi.name}"
+                else:  # EXIT
+                    event_description = f"outside {poi.name}"
             
             # Send email
             email_service = EmailService()

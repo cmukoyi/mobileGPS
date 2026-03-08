@@ -1600,6 +1600,19 @@ def get_alerts(
         poi = db.query(POI).filter(POI.id == alert.poi_id).first()
         tracker = db.query(BLETag).filter(BLETag.id == alert.tracker_id).first()
         
+        # Get tracker display name (priority: description > device_name > IMEI last 4)
+        if tracker:
+            if tracker.description:
+                tracker_name = tracker.description
+            elif tracker.device_name:
+                tracker_name = tracker.device_name
+            elif tracker.imei:
+                tracker_name = f"GPS Tracker ({tracker.imei[-4:]})"
+            else:
+                tracker_name = "GPS Tracker"
+        else:
+            tracker_name = None
+        
         formatted_alerts.append(GeofenceAlertResponse(
             id=str(alert.id),
             poi_id=str(alert.poi_id),
@@ -1611,7 +1624,7 @@ def get_alerts(
             is_read=alert.is_read,
             created_at=alert.created_at,
             poi_name=poi.name if poi else None,
-            tracker_name=tracker.device_name if tracker else None
+            tracker_name=tracker_name
         ))
     
     return AlertsListResponse(

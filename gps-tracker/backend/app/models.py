@@ -106,6 +106,13 @@ class GeofenceEventType(enum.Enum):
     EXIT = "exit"
 
 
+class GeofenceState(enum.Enum):
+    """Tracks the last known state of a tracker relative to a geofence"""
+    UNKNOWN = "unknown"  # Initial state - not yet determined
+    INSIDE = "inside"    # Tracker is inside the geofence
+    OUTSIDE = "outside"  # Tracker is outside the geofence
+
+
 class POIType(enum.Enum):
     SINGLE = "single"  # Single location POI (monitor entry/exit)
     ROUTE = "route"    # Delivery route (FROM origin TO destination)
@@ -153,6 +160,10 @@ class POITrackerLink(Base):
     is_armed = Column(Boolean, default=True)
     armed_at = Column(DateTime(timezone=True), server_default=func.now())
     disarmed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # State tracking for alert generation
+    last_known_state = Column(Enum(GeofenceState), default=GeofenceState.UNKNOWN, nullable=False)
+    last_state_check = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     poi = relationship("POI", back_populates="tracker_links")

@@ -161,7 +161,7 @@ class EmailService:
     def send_geofence_alert(
         self, 
         to_email: str, 
-        event_type: str,  # 'entry' or 'exit'
+        event_type: str,  # e.g., 'inside Home', 'outside Office', 'left origin', etc.
         poi_name: str,
         tracker_name: str,
         latitude: float,
@@ -174,31 +174,33 @@ class EmailService:
             if self.debug:
                 print(f"\n{'='*60}")
                 print(f"🚨 GEOFENCE ALERT for {to_email}")
-                print(f"     Event: {event_type.upper()}")
+                print(f"     Event: {event_type}")
                 print(f"     POI: {poi_name}")
                 print(f"     Tracker: {tracker_name}")
                 print(f"     Location: {latitude}, {longitude}")
                 print(f"     Time: {timestamp}")
                 print(f"{'='*60}\n")
             
-            event_emoji = "🟢" if event_type == "entry" else "🔴"
-            event_action = "entered" if event_type == "entry" else "exited"
-            event_color = "#4CAF50" if event_type == "entry" else "#F44336"
+            # Determine emoji and color based on event description
+            # 'inside' or 'entry' events = green, 'outside' or 'exit' = red
+            is_entry = 'inside' in event_type.lower() or 'entry' in event_type.lower() or 'arrived' in event_type.lower()
+            event_emoji = "🟢" if is_entry else "🔴"
+            event_color = "#4CAF50" if is_entry else "#F44336"
             
             msg = MIMEMultipart('alternative')
-            msg['Subject'] = f'{event_emoji} Geofence Alert: {tracker_name} {event_action} {poi_name}'
+            # Subject line: "Tracker XXX is inside/outside Location"
+            msg['Subject'] = f'{event_emoji} Alert: {tracker_name} is {event_type}'
             msg['From'] = self.from_email
             msg['To'] = to_email
             
             # Plain text version
             text = f"""
-            Geofence Alert
+            Location Alert
             
-            Your tracker "{tracker_name}" has {event_action} the geofenced area "{poi_name}".
+            Your tracker "{tracker_name}" is {event_type}.
             
-            Event: {event_type.upper()}
-            Location: {poi_name}
             Tracker: {tracker_name}
+            Status: {event_type}
             Coordinates: {latitude}, {longitude}
             Time: {timestamp}
             
@@ -214,28 +216,29 @@ class EmailService:
               <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                   <div style="background-color: {event_color}; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                    <h1 style="color: white; margin: 0; font-size: 32px;">{event_emoji} Geofence Alert</h1>
+                    <h1 style="color: white; margin: 0; font-size: 32px;">{event_emoji} Location Alert</h1>
                   </div>
                   <div style="background-color: #f4f4f4; padding: 30px; border-radius: 0 0 8px 8px;">
                     <p style="font-size: 18px; margin-top: 0;">
-                      Your tracker <strong>"{tracker_name}"</strong> has <strong style="color: {event_color};">{event_action}</strong> 
-                      the geofenced area <strong>"{poi_name}"</strong>.
+                      Your tracker <strong>"{tracker_name}"</strong> is <strong style="color: {event_color};">{event_type}</strong>.
                     </p>
                     
                     <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
                       <tr>
-                        <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Event:</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Tracker:</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #ddd;">
+                          {tracker_name}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Status:</strong></td>
                         <td style="padding: 10px; border-bottom: 1px solid #ddd; color: {event_color}; font-weight: bold;">
-                          {event_type.upper()}
+                          {event_type}
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Location:</strong></td>
                         <td style="padding: 10px; border-bottom: 1px solid #ddd;">{poi_name}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Tracker:</strong></td>
-                        <td style="padding: 10px; border-bottom: 1px solid #ddd;">{tracker_name}</td>
                       </tr>
                       <tr>
                         <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Coordinates:</strong></td>
