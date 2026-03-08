@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ble_tracker_app/theme/app_theme.dart';
 import 'package:ble_tracker_app/screens/auth/welcome_screen.dart';
+import 'package:ble_tracker_app/screens/auth/reset_password_screen.dart';
 import 'package:ble_tracker_app/screens/map_screen.dart';
 import 'package:ble_tracker_app/screens/poi_management_screen.dart';
 import 'package:ble_tracker_app/services/auth_service.dart';
@@ -47,6 +48,24 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAuthStatus() async {
     await Future.delayed(Duration(milliseconds: 500)); // Brief delay
+    
+    if (!mounted) return;
+    
+    // Check for password reset token in URL
+    final uri = Uri.base;
+    final resetToken = uri.queryParameters['reset_token'];
+    
+    if (resetToken != null && resetToken.isNotEmpty) {
+      print('🔑 Reset token detected in URL: ${resetToken.substring(0, 10)}...');
+      // Navigate to reset password screen with token
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordScreen(token: resetToken),
+        ),
+      );
+      return;
+    }
     
     try {
       final isLoggedIn = await _authService.isLoggedIn();
