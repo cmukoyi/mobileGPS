@@ -275,7 +275,7 @@ class EmailService:
             if self.use_sendgrid:
                 return self._send_via_sendgrid(
                     to_email=to_email,
-                    subject=f'{event_emoji} Geofence Alert: {tracker_name} {event_action} {poi_name}',
+                    subject=f'{event_emoji} Alert: {tracker_name} is {event_type}',
                     text_content=text,
                     html_content=html
                 )
