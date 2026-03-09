@@ -360,9 +360,9 @@ class GeofenceService:
             else:
                 # Single POI - use "inside" or "outside" messaging
                 if event_type == GeofenceEventType.ENTRY:
-                    event_description = f"inside {poi.name}"
+                    event_description = "Inside"
                 else:  # EXIT
-                    event_description = f"outside {poi.name}"
+                    event_description = "Outside"
             
             # Send email
             email_service = EmailService()

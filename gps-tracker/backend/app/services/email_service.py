@@ -62,7 +62,7 @@ class EmailService:
             If you didn't request this code, please ignore this email.
             
             Best regards,
-            BLE Tracker Team
+            Beacon Telematics Team
             """
             
             # HTML version
@@ -78,7 +78,7 @@ class EmailService:
                   <p style="color: #666;">This code will expire in <strong>10 minutes</strong>.</p>
                   <p style="color: #666;">If you didn't request this code, please ignore this email.</p>
                   <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-                  <p style="color: #999; font-size: 12px;">Best regards,<br>BLE Tracker Team</p>
+                  <p style="color: #999; font-size: 12px;">Best regards,<br>Beacon Telematics Team</p>
                 </div>
               </body>
             </html>
@@ -129,7 +129,7 @@ class EmailService:
                   <p>Thank you for joining BLE Tracker. Your account has been successfully created.</p>
                   <p>You can now start adding and tracking your BLE devices.</p>
                   <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-                  <p style="color: #999; font-size: 12px;">Best regards,<br>BLE Tracker Team</p>
+                  <p style="color: #999; font-size: 12px;">Best regards,<br>Beacon Telematics Team</p>
                 </div>
               </body>
             </html>
@@ -207,7 +207,7 @@ class EmailService:
             View location on map: https://www.google.com/maps?q={latitude},{longitude}
             
             Best regards,
-            BLE Tracker Team
+            Beacon Telematics Team
             """
             
             # HTML version
@@ -265,7 +265,7 @@ class EmailService:
                     </p>
                   </div>
                   <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-                  <p style="color: #999; font-size: 12px;">Best regards,<br>BLE Tracker Team</p>
+                  <p style="color: #999; font-size: 12px;">Best regards,<br>Beacon Telematics Team</p>
                 </div>
               </body>
             </html>
