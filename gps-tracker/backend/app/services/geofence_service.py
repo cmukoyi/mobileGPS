@@ -113,8 +113,13 @@ class GeofenceService:
         current_lon: float
     ) -> List[GeofenceAlert]:
         """
-        Check single location POI for entry/exit events using state tracking.
-        Only generates alerts when state changes (inside<->outside).
+        Check single location POI for entry/exit events using STRICT PAIRING logic.
+        
+        Strict Pairing Rules:
+        - If last_known_state == INSIDE → only alert on EXIT (tracker leaves)
+        - If last_known_state == OUTSIDE → only alert on ENTRY (tracker enters)
+        - If last_known_state == UNKNOWN → update state but DO NOT alert
+        - Alerts fire in strict pairs: EXIT → ENTRY → EXIT → ENTRY...
         """
         alerts = []
         
@@ -141,38 +146,42 @@ class GeofenceService:
         current_state = GeofenceState.INSIDE if is_inside else GeofenceState.OUTSIDE
         last_state = link.last_known_state
         
-        # Only generate alert if state changed
+        # Strict pairing logic - only alert on expected transitions
         should_alert = False
         event_type = None
         
         if last_state == GeofenceState.UNKNOWN:
-            # First check - always alert with current state
-            should_alert = True
-            event_type = GeofenceEventType.ENTRY if is_inside else GeofenceEventType.EXIT
-            logger.info(f"Initial state for {poi.name}, tracker {tracker_id}: {current_state.value}")
+            # State is unknown (GPS unavailable at arm time)
+            # Update to current state but DO NOT generate alert
+            logger.info(f"Resolving unknown state for {poi.name}, tracker {tracker_id}: now {current_state.value}")
             
         elif last_state == GeofenceState.INSIDE and current_state == GeofenceState.OUTSIDE:
-            # State change: INSIDE → OUTSIDE (tracker left geofence)
+            # Expected transition: INSIDE → EXIT
             should_alert = True
             event_type = GeofenceEventType.EXIT
-            logger.info(f"State change for {poi.name}, tracker {tracker_id}: INSIDE → OUTSIDE")
+            logger.info(f"STRICT PAIR: {poi.name}, tracker {tracker_id}: INSIDE → EXIT (alert)")
             
         elif last_state == GeofenceState.OUTSIDE and current_state == GeofenceState.INSIDE:
-            # State change: OUTSIDE → INSIDE (tracker entered geofence)
+            # Expected transition: OUTSIDE → ENTRY
             should_alert = True
             event_type = GeofenceEventType.ENTRY
-            logger.info(f"State change for {poi.name}, tracker {tracker_id}: OUTSIDE → INSIDE")
+            logger.info(f"STRICT PAIR: {poi.name}, tracker {tracker_id}: OUTSIDE → ENTRY (alert)")
             
-        else:
-            # No state change - no alert
-            logger.debug(f"No state change for {poi.name}, tracker {tracker_id}: {current_state.value}")
+        elif last_state == GeofenceState.INSIDE and current_state == GeofenceState.INSIDE:
+            # Still inside - no alert (waiting for EXIT)
+            logger.debug(f"No change for {poi.name}, tracker {tracker_id}: still INSIDE (waiting for EXIT)")
+            
+        elif last_state == GeofenceState.OUTSIDE and current_state == GeofenceState.OUTSIDE:
+            # Still outside - no alert (waiting for ENTRY)
+            logger.debug(f"No change for {poi.name}, tracker {tracker_id}: still OUTSIDE (waiting for ENTRY)")
         
-        # Update state tracking regardless of alert generation
-        link.last_known_state = current_state
-        link.last_state_check = datetime.now(timezone.utc)
-        db.add(link)
+        # Update state tracking - only update if state actually changed or was unknown
+        if last_state != current_state:
+            link.last_known_state = current_state
+            link.last_state_check = datetime.now(timezone.utc)
+            db.add(link)
         
-        # Generate alert if state changed
+        # Generate alert ONLY if strict pair condition met
         if should_alert and event_type:
             alert = GeofenceAlert(
                 poi_id=poi.id,
@@ -187,10 +196,10 @@ class GeofenceService:
             alerts.append(alert)
             
             logger.info(
-                f"Single POI alert generated: tracker {event_type.value} {poi.name}"
+                f"✅ ALERT GENERATED: tracker {event_type.value} {poi.name} (strict pairing)"
             )
             
-            # Send email alert with updated message format
+            # Send email alert
             GeofenceService._send_email_alert(
                 db, user_id, tracker_id, poi, event_type, current_lat, current_lon
             )

@@ -1526,6 +1526,34 @@ def arm_poi_to_tracker(
     if not tracker:
         raise HTTPException(status_code=404, detail="Tracker not found")
     
+    # Get tracker's current GPS position to set initial state
+    initial_state = GeofenceState.UNKNOWN
+    try:
+        # Fetch vehicle location from MZone API
+        user_imeis = [tracker.imei]
+        vehicles = mzone_service.get_vehicles_with_locations(user_imeis)
+        
+        if vehicles and len(vehicles) > 0:
+            vehicle = vehicles[0]
+            last_position = vehicle.get('lastKnownPosition')
+            
+            if last_position:
+                current_lat = last_position.get('latitude')
+                current_lon = last_position.get('longitude')
+                
+                if current_lat is not None and current_lon is not None:
+                    # Determine if tracker is currently inside or outside POI
+                    is_inside = GeofenceService.is_inside_geofence(
+                        current_lat, current_lon,
+                        poi.latitude, poi.longitude,
+                        poi.radius
+                    )
+                    initial_state = GeofenceState.INSIDE if is_inside else GeofenceState.OUTSIDE
+                    logger.info(f"Armed POI '{poi.name}' to tracker {tracker.imei}: initial state = {initial_state.value}")
+    except Exception as e:
+        logger.warning(f"Could not determine initial state for POI arming: {str(e)}")
+        # Continue with UNKNOWN state
+    
     # Check if link already exists
     existing_link = db.query(POITrackerLink).filter(
         POITrackerLink.poi_id == poi_id,
@@ -1533,28 +1561,29 @@ def arm_poi_to_tracker(
     ).first()
     
     if existing_link:
-        # Re-arm if it was disarmed
+        # Re-arm if it was disarmed - reset state based on current position
         if not existing_link.is_armed:
             existing_link.is_armed = True
             existing_link.armed_at = datetime.utcnow()
             existing_link.disarmed_at = None
+            existing_link.last_known_state = initial_state
             db.commit()
-            return {"message": "POI re-armed to tracker"}
+            return {"message": f"POI re-armed to tracker (state: {initial_state.value})"}
         else:
             return {"message": "POI already armed to tracker"}
     
-    # Create new link
+    # Create new link with determined initial state
     link = POITrackerLink(
         poi_id=poi_id,
         tracker_id=tracker_id,
         is_armed=True,
-        last_known_state=GeofenceState.UNKNOWN
+        last_known_state=initial_state
     )
     
     db.add(link)
     db.commit()
     
-    return {"message": "POI armed to tracker successfully"}
+    return {"message": f"POI armed to tracker successfully (state: {initial_state.value})"}
 
 
 @app.post("/api/v1/pois/{poi_id}/disarm/{tracker_id}")
