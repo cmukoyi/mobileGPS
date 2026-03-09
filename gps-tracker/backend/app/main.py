@@ -18,6 +18,8 @@ from app.auth import verify_password, get_password_hash, create_access_token, de
 from app.services.email_service import EmailService
 from app.services.mzone_service import mzone_service
 from app.services.geofence_service import GeofenceService
+from app.services.location_poller_service import location_poller
+import asyncio
 from app.schemas.poi import (
     POICreate, POIUpdate, POIResponse, POIWithArmedStatus,
     POITrackerLinkCreate, POITrackerLinkResponse,
@@ -196,11 +198,20 @@ email_service = EmailService()
 
 # Initialize database on startup
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     init_db()
     print("Database initialized!")
     print(f"SMTP configured: {email_service.smtp_host}:{email_service.smtp_port}")
     print("MailHog Web UI available at: http://localhost:8025")
+    
+    # Start background location poller
+    asyncio.create_task(location_poller.start())
+    print("🚀 Location Poller Service started (60-second interval)")
+
+@app.on_event("shutdown")
+def shutdown_event():
+    location_poller.stop()
+    print("🛑 Location Poller Service stopped")
 
 # Demo data - simulating BLE tags
 DEMO_TAGS = [
@@ -1184,99 +1195,75 @@ def get_vehicles(
     db: Session = Depends(get_db)
 ):
     """
-    Fetch vehicles from MZone API filtered by user's stored IMEIs
-    Returns real-time location data for user's vehicles
+    Get vehicles from cached database (updated by background poller every 60 seconds)
+    Returns last known positions without calling MZone API on every request
     """
     import os
     debug = os.getenv('DEBUG', 'False').lower() == 'true'
     
     try:
-        # Get user's IMEIs from database
+        # Get user's trackers from database (already updated by background poller)
         tags = db.query(BLETag).filter(
             BLETag.user_id == current_user.id,
             BLETag.is_active == True
         ).all()
         
-        user_imeis = [tag.imei for tag in tags]
-        
         if debug:
             print(f"\n{'='*60}")
-            print(f"📱 User {current_user.email} requesting vehicles")
-            print(f"🏷️  User has {len(user_imeis)} tags: {user_imeis}")
+            print(f"📱 User {current_user.email} requesting vehicles (from cache)")
+            print(f"🏷️  User has {len(tags)} tags")
             print(f"{'='*60}\n")
         
-        if not user_imeis:
+        if not tags:
             return {
                 "success": True,
                 "vehicles": [],
                 "message": "No tags registered. Please add vehicle IMEIs first."
             }
         
-        # Get vehicles with locations from MZone API
-        vehicles = mzone_service.get_vehicles_with_locations(user_imeis)
-        
-        if debug:
-            print(f"\n{'='*60}")
-            print(f"✅ Returning {len(vehicles)} vehicles to user")
-            print(f"{'='*60}\n")
-        
-        # Format response for mobile app
+        # Format response from cached database data
         formatted_vehicles = []
-        for vehicle in vehicles:
-            position = vehicle.get('lastKnownPosition', {})
-            
-            # Build lastKnownPosition object if location data exists
+        for tag in tags:
+            # Build lastKnownPosition from cached data
             last_known_position = None
-            if position.get('latitude') is not None and position.get('longitude') is not None:
-                last_known_position = {
-                    "latitude": position.get('latitude'),
-                    "longitude": position.get('longitude'),
-                    "utcTimestamp": position.get('utcTimestamp'),
-                    "speed": position.get('speed'),
-                    "heading": position.get('direction'),  # MZone uses 'direction'
-                    "locationDescription": position.get('locationDescription'),  # Add address/location description
-                }
-                
-                # Check geofences for this vehicle's location
-                # Find the tracker by IMEI (registration)
-                tracker = db.query(BLETag).filter(
-                    BLETag.imei == vehicle.get('registration'),
-                    BLETag.user_id == current_user.id
-                ).first()
-                
-                if tracker:
-                    # Update tracker description from MZone API if available
-                    vehicle_description = vehicle.get('description')
-                    if vehicle_description and tracker.description != vehicle_description:
-                        tracker.description = vehicle_description
-                        tracker.updated_at = datetime.utcnow()
-                        db.commit()
-                    
-                    try:
-                        GeofenceService.check_geofences_for_tracker(
-                            db,
-                            str(tracker.id),
-                            position.get('latitude'),
-                            position.get('longitude'),
-                            str(current_user.id)
-                        )
-                    except Exception as e:
-                        if debug:
-                            print(f"⚠️  Error checking geofences for tracker {tracker.id}: {str(e)}")
-            
-            # Find tracker by IMEI to get the correct database ID
-            tracker_for_id = db.query(BLETag).filter(
-                BLETag.imei == vehicle.get('registration'),
-                BLETag.user_id == current_user.id
-            ).first()
+            if tag.latitude and tag.longitude:
+                try:
+                    last_known_position = {
+                        "latitude": float(tag.latitude),
+                        "longitude": float(tag.longitude),
+                        "utcTimestamp": tag.last_seen.isoformat() if tag.last_seen else None,
+                        "speed": None,  # Not stored in database currently
+                        "heading": None,  # Not stored in database currently
+                        "locationDescription": None,  # Not stored in database currently
+                    }
+                except (ValueError, TypeError):
+                    pass
             
             formatted_vehicles.append({
-                "id": str(tracker_for_id.id) if tracker_for_id else vehicle.get('id'),  # Use BLETag ID instead of MZone ID
-                "description": vehicle.get('description'),
-                "registration": vehicle.get('registration'),  # IMEI
-                "ignitionOn": vehicle.get('ignitionOn', False),
+                "id": str(tag.id),  # Use BLETag database ID
+                "description": tag.description,
+                "registration": tag.imei,
+                "ignitionOn": False,  # Not stored in database currently
                 "lastKnownPosition": last_known_position
             })
+        
+        if debug:
+            print(f"✅ Returning {len(formatted_vehicles)} vehicles from cache")
+        
+        return {
+            "success": True,
+            "count": len(formatted_vehicles),
+            "vehicles": formatted_vehicles
+        }
+    
+    except Exception as e:
+        if debug:
+            print(f"❌ Error in /api/vehicles: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "vehicles": []
+        }
         
         return {
             "success": True,
