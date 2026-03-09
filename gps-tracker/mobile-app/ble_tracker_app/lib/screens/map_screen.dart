@@ -99,9 +99,9 @@ class _MapScreenState extends State<MapScreen> {
     _loadUnreadAlertCount();
     _loadPOIs();
     
-    // Auto-refresh locations every 10 minutes
-    _locationRefreshTimer = Timer.periodic(Duration(minutes: 10), (timer) {
-      _logger.info('Auto-refreshing vehicle locations (10 min interval)');
+    // Auto-refresh locations every 60 seconds for armed geofences
+    _locationRefreshTimer = Timer.periodic(Duration(seconds: 60), (timer) {
+      _logger.info('Auto-refreshing vehicle locations (60 sec interval)');
       _loadTags();
     });
   }
