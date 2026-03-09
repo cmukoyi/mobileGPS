@@ -1353,26 +1353,26 @@ Best regards''',
                             _hideVehicleDetails();
                             _showEditNameDialog(vehicle);
                           },
-                          icon: Icon(Icons.edit, size: 16),
-                          label: Text('Rename', style: GoogleFonts.inter(fontSize: 12)),
+                          icon: Icon(Icons.edit, size: 14),
+                          label: Text('Rename', style: GoogleFonts.inter(fontSize: 11)),
                           style: OutlinedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 10),
+                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                           ),
                         ),
                       ),
-                      SizedBox(width: 8),
+                      SizedBox(width: 6),
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
                             _hideVehicleDetails();
                             _showShareLocationOptions(vehicle);
                           },
-                          icon: Icon(Icons.share, size: 16),
-                          label: Text('Share', style: GoogleFonts.inter(fontSize: 12)),
+                          icon: Icon(Icons.share, size: 14),
+                          label: Text('Share', style: GoogleFonts.inter(fontSize: 11)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 10),
+                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                           ),
                         ),
                       ),
