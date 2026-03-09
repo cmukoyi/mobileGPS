@@ -1264,8 +1264,14 @@ def get_vehicles(
                         if debug:
                             print(f"⚠️  Error checking geofences for tracker {tracker.id}: {str(e)}")
             
+            # Find tracker by IMEI to get the correct database ID
+            tracker_for_id = db.query(BLETag).filter(
+                BLETag.imei == vehicle.get('registration'),
+                BLETag.user_id == current_user.id
+            ).first()
+            
             formatted_vehicles.append({
-                "id": vehicle.get('id'),
+                "id": str(tracker_for_id.id) if tracker_for_id else vehicle.get('id'),  # Use BLETag ID instead of MZone ID
                 "description": vehicle.get('description'),
                 "registration": vehicle.get('registration'),  # IMEI
                 "ignitionOn": vehicle.get('ignitionOn', False),
