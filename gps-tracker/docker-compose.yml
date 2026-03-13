@@ -87,15 +87,28 @@ services:
   nginx:
     image: nginx:alpine
     container_name: ble_tracker_nginx
-    ports:
-      - "80:80"
-      - "443:443"
+    # NO ports exposed - internal only (do not conflict with system nginx or beaconTelematics)
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
       - admin
+      - flutter-web
+    networks:
+      - ble_network
+
+  # Pinplot service: HTTP/HTTPS reverse proxy exposed on port 8493 for host-level nginx
+  pinplot:
+    image: nginx:alpine
+    container_name: pinplot_proxy
+    ports:
+      - "8493:443"
+    volumes:
+      - ./nginx/pinplot.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
       - flutter-web
     networks:
       - ble_network
